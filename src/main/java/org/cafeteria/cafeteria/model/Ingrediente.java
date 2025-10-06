@@ -1,11 +1,15 @@
 package org.cafeteria.cafeteria.model;
 
-public class Ingrediente {
-    public Long idIngrediente;
-    public String nombre;
-    public String descripcion;
-    public String preparacion;
+import jakarta.persistence.*;
 
-    public Ingrediente() {
-    }
+@Entity @Table(name = "ingredientes")
+public class Ingrediente {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    public Long idIngrediente;
+
+    public String nombre;
+    @Lob public String descripcion;
+    @Lob public String preparacion;
+
+    public Ingrediente() {}
 }
