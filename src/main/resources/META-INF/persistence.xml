@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence version="3.0"
+             xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd">
+
+    <persistence-unit name="CafeteriaPU" transaction-type="RESOURCE_LOCAL">
+        <provider>com.objectdb.jpa.Provider</provider>
+
+        <!-- Lista explícita de entidades (evita “Type X is not found”) -->
+        <class>org.cafeteria.cafeteria.model.Tienda</class>
+        <class>org.cafeteria.cafeteria.model.Producto</class>
+        <class>org.cafeteria.cafeteria.model.Inventario</class>
+        <class>org.cafeteria.cafeteria.model.Venta</class>
+        <class>org.cafeteria.cafeteria.model.ProductoVendido</class>
+        <class>org.cafeteria.cafeteria.model.Receta</class>
+        <class>org.cafeteria.cafeteria.model.Paso</class>
+        <class>org.cafeteria.cafeteria.model.Ingrediente</class>
+        <class>org.cafeteria.cafeteria.model.ProporcionIngrediente</class>
+        <class>org.cafeteria.cafeteria.model.InventarioIngredientes</class>
+
+        <exclude-unlisted-classes>false</exclude-unlisted-classes>
+
+        <properties>
+            <!-- crea ./data/cafeteria.odb si no existe -->
+            <property name="jakarta.persistence.jdbc.url" value="objectdb:./data/cafeteria.odb"/>
+            <property name="jakarta.persistence.schema-generation.database.action" value="create"/>
+        </properties>
+    </persistence-unit>
+</persistence>
