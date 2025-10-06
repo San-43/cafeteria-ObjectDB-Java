@@ -1,6 +1,4 @@
 package org.cafeteria.cafeteria.config;
-
-import jakarta.persistence.EntityManager;
 import org.cafeteria.cafeteria.model.*;
 
 import java.math.BigDecimal;
