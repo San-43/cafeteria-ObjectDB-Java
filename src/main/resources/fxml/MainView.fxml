@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.cafeteria.cafeteria.controller.MainController">
+    <left>
+        <VBox spacing="8" BorderPane.alignment="CENTER_LEFT" style="-fx-background-color: #f7f7f7;" prefWidth="240">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+            <Label text="Cafetería — Formularios" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+            <Separator/>
+            <Button text="Tienda" onAction="#openTienda" maxWidth="Infinity"/>
+            <Button text="Producto" onAction="#openProducto" maxWidth="Infinity"/>
+            <Button text="Ingrediente" onAction="#openIngrediente" maxWidth="Infinity"/>
+            <Button text="Receta" onAction="#openReceta" maxWidth="Infinity"/>
+            <Button text="Proporción Ingrediente" onAction="#openProporcionIngrediente" maxWidth="Infinity"/>
+            <Button text="Paso de Receta" onAction="#openPaso" maxWidth="Infinity"/>
+            <Button text="Inventario de Productos" onAction="#openInventario" maxWidth="Infinity"/>
+            <Button text="Inventario de Ingredientes" onAction="#openInventarioIngredientes" maxWidth="Infinity"/>
+            <Button text="Venta" onAction="#openVenta" maxWidth="Infinity"/>
+            <Button text="Producto Vendido" onAction="#openProductoVendido" maxWidth="Infinity"/>
+            <Separator/>
+            <Button text="Salir" onAction="#exitApp" maxWidth="Infinity"/>
+        </VBox>
+    </left>
+    <center>
+        <StackPane fx:id="contentHolder">
+            <Label text="Selecciona un formulario en la izquierda."/>
+        </StackPane>
+    </center>
+</BorderPane>

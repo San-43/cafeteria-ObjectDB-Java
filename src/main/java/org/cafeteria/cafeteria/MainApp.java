@@ -2,53 +2,41 @@ package org.cafeteria.cafeteria;
 
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
 import org.cafeteria.cafeteria.config.DbBootstrap;
 import org.cafeteria.cafeteria.config.JPAUtil;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 public class MainApp extends Application {
     @Override
     public void start(Stage stage) {
-        Label status = new Label("Inicializando base de datos…");
-        status.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
-        Label detail = new Label();
-        Button cerrar = new Button("Cerrar");
-        cerrar.setOnAction(e -> { try { JPAUtil.close(); } catch (Exception ignored) {} Platform.exit(); });
-
-        VBox root = new VBox(12, status, detail, cerrar);
-        root.setAlignment(Pos.CENTER);
-        root.setPadding(new Insets(24));
-        stage.setScene(new Scene(root, 460, 180));
-        stage.setTitle("Cafetería — Estado de la Base de Datos");
-        stage.show();
-
         try {
-            Path dataDir = Path.of("data");
-            if (!Files.exists(dataDir)) Files.createDirectories(dataDir);
+            DbBootstrap.init();
         } catch (Exception ex) {
-            status.setText("❌ Error al preparar carpeta de datos");
-            detail.setText(ex.getMessage());
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error al iniciar la base de datos:\n" + ex.getMessage(), ButtonType.CLOSE);
+            alert.setHeaderText("No se pudo inicializar la BD");
+            alert.showAndWait();
             ex.printStackTrace();
+            Platform.exit();
             return;
         }
 
         try {
-            DbBootstrap.init();
-            status.setText("✅ Base de datos iniciada correctamente");
-            detail.setText("Archivo: ./data/cafeteria.odb");
+            Parent root = FXMLLoader.load(getClass().getResource("/fxml/MainView.fxml"));
+            stage.setTitle("Cafetería — Administrador");
+            stage.setScene(new Scene(root, 1100, 700));
+            stage.show();
         } catch (Exception ex) {
-            status.setText("❌ Error al iniciar la base de datos");
-            detail.setText(ex.getClass().getSimpleName() + ": " + (ex.getMessage() == null ? "" : ex.getMessage()));
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error al cargar la interfaz:\n" + ex.getMessage(), ButtonType.CLOSE);
+            alert.setHeaderText("Fallo al cargar FXML principal");
+            alert.showAndWait();
             ex.printStackTrace();
+            try { JPAUtil.close(); } catch (Exception ignored) {}
+            Platform.exit();
         }
     }
     public static void main(String[] args) { launch(args); }

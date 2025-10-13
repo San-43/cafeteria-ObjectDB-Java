@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.cafeteria.cafeteria.controller.ProporcionIngredienteFormController">
+    <center>
+        <GridPane hgap="10" vgap="10" padding="10">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="30"/>
+                <ColumnConstraints percentWidth="70"/>
+            </columnConstraints>
+            <children>
+                <Label text="Receta:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                <ComboBox fx:id="recetaCombo" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                <Label text="Ingrediente:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                <ComboBox fx:id="ingredienteCombo" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                <Label text="Proporción:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                <TextField fx:id="proporcionField" promptText="Ej. 12 g, 150 ml" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+            </children>
+        </GridPane>
+    </center>
+    <bottom>
+        <HBox spacing="10" alignment="CENTER_RIGHT" padding="10">
+            <Button text="Limpiar" onAction="#onClear"/>
+            <Button text="Guardar" onAction="#onSave" defaultButton="true"/>
+        </HBox>
+    </bottom>
+</BorderPane>
+

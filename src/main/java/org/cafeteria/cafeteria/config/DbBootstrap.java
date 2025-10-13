@@ -13,7 +13,7 @@ public final class DbBootstrap {
 
             // Crear tienda por defecto si no hay ninguna
             long tiendas = em.createQuery("select count(t) from Tienda t", Long.class).getSingleResult();
-            if (tiendas == 0) {
+            if (tiendas == 1) {
                 // Tiendas
                 Tienda tiendaCentro = new Tienda();
                 tiendaCentro.telefono = "771-000-0000";

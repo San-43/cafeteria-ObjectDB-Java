@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.cafeteria.cafeteria.controller.InventarioIngredientesFormController">
+    <center>
+        <GridPane hgap="10" vgap="10" padding="10">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="30"/>
+                <ColumnConstraints percentWidth="70"/>
+            </columnConstraints>
+            <children>
+                <Label text="Tienda:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                <ComboBox fx:id="tiendaCombo" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                <Label text="Ingrediente:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                <ComboBox fx:id="ingredienteCombo" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                <Label text="Fecha compra:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                <DatePicker fx:id="fechaCompraPicker" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                <Label text="Fecha caducidad:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                <DatePicker fx:id="fechaCaducidadPicker" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                <Label text="Costo compra:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                <TextField fx:id="costoCompraField" promptText="0.00" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+                <Label text="Precio venta porción:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                <TextField fx:id="precioPorcionField" promptText="0.00" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+            </children>
+        </GridPane>
+    </center>
+    <bottom>
+        <HBox spacing="10" alignment="CENTER_RIGHT" padding="10">
+            <Button text="Limpiar" onAction="#onClear"/>
+            <Button text="Guardar" onAction="#onSave" defaultButton="true"/>
+        </HBox>
+    </bottom>
+</BorderPane>
+

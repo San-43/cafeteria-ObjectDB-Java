@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.cafeteria.cafeteria.controller.VentaFormController">
+    <center>
+        <GridPane hgap="10" vgap="10" padding="10">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="30"/>
+                <ColumnConstraints percentWidth="70"/>
+            </columnConstraints>
+            <children>
+                <Label text="Tienda:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                <ComboBox fx:id="tiendaCombo" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                <Label text="Fecha:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                <DatePicker fx:id="fechaPicker" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                <Label text="Hora (HH:mm):" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                <TextField fx:id="horaField" promptText="Ej. 14:30" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                <Label text="Total:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                <TextField fx:id="totalField" promptText="0.00" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+            </children>
+        </GridPane>
+    </center>
+    <bottom>
+        <HBox spacing="10" alignment="CENTER_RIGHT" padding="10">
+            <Button text="Limpiar" onAction="#onClear"/>
+            <Button text="Guardar" onAction="#onSave" defaultButton="true"/>
+        </HBox>
+    </bottom>
+</BorderPane>
+
