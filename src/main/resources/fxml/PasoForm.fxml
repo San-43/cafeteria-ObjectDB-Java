@@ -5,30 +5,44 @@
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="org.cafeteria.cafeteria.controller.PasoFormController">
     <center>
-        <GridPane hgap="10" vgap="10">
+        <VBox spacing="15">
             <padding>
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
-            <columnConstraints>
-                <ColumnConstraints percentWidth="30"/>
-                <ColumnConstraints percentWidth="70"/>
-            </columnConstraints>
             <children>
-                <Label text="Receta:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                <ComboBox fx:id="recetaCombo" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                <GridPane hgap="10" vgap="10">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="30"/>
+                        <ColumnConstraints percentWidth="70"/>
+                    </columnConstraints>
+                    <children>
+                        <Label text="Receta:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                        <ComboBox fx:id="recetaCombo" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-                <Label text="Descripción del paso:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                <TextArea fx:id="descripcionArea" prefRowCount="4" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                        <Label text="Descripción del paso:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <TextArea fx:id="descripcionArea" prefRowCount="4" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                    </children>
+                </GridPane>
+
+                <TableView fx:id="pasosTable" prefHeight="250.0">
+                    <columns>
+                        <TableColumn fx:id="idColumn" text="ID" prefWidth="70.0"/>
+                        <TableColumn fx:id="recetaColumn" text="Receta" prefWidth="220.0"/>
+                        <TableColumn fx:id="descripcionColumn" text="Descripción" prefWidth="250.0"/>
+                    </columns>
+                </TableView>
             </children>
-        </GridPane>
+        </VBox>
     </center>
     <bottom>
         <HBox spacing="10" alignment="CENTER_RIGHT">
             <padding>
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
-            <Button text="Limpiar" onAction="#onClear"/>
             <Button text="Guardar" onAction="#onSave" defaultButton="true"/>
+            <Button text="Actualizar" onAction="#onUpdate"/>
+            <Button text="Eliminar" onAction="#onDelete"/>
+            <Button text="Limpiar" onAction="#onClear"/>
         </HBox>
     </bottom>
 </BorderPane>

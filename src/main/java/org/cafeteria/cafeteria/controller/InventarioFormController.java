@@ -1,7 +1,9 @@
 package org.cafeteria.cafeteria.controller;
 
 import jakarta.persistence.EntityManager;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.StringConverter;
@@ -16,8 +18,36 @@ public class InventarioFormController {
     @FXML private ComboBox<Tienda> tiendaCombo;
     @FXML private ComboBox<Producto> productoCombo;
     @FXML private TextField stockField;
+    @FXML private TableView<Inventario> inventarioTable;
+    @FXML private TableColumn<Inventario, Long> idColumn;
+    @FXML private TableColumn<Inventario, String> tiendaColumn;
+    @FXML private TableColumn<Inventario, String> productoColumn;
+    @FXML private TableColumn<Inventario, Integer> stockColumn;
 
-    @FXML private void initialize() { loadTiendas(); loadProductos(); }
+    private final ObservableList<Inventario> inventarios = FXCollections.observableArrayList();
+
+    @FXML private void initialize() {
+        loadTiendas();
+        loadProductos();
+
+        idColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().idInventario));
+        tiendaColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
+                cell.getValue().tienda != null ? cell.getValue().tienda.direccion : null));
+        productoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
+                cell.getValue().producto != null ? cell.getValue().producto.descripcion : null));
+        stockColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().stock));
+
+        inventarioTable.setItems(inventarios);
+        inventarioTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
+            if (selected != null) {
+                selectComboValue(tiendaCombo, selected.tienda != null ? selected.tienda.idTienda : null);
+                selectComboValue(productoCombo, selected.producto != null ? selected.producto.idProducto : null);
+                stockField.setText(selected.stock != null ? selected.stock.toString() : "");
+            }
+        });
+
+        loadInventario();
+    }
 
     private void loadTiendas() {
         EntityManager em = JPAUtil.em();
@@ -58,6 +88,7 @@ public class InventarioFormController {
             em.persist(inv);
             em.getTransaction().commit();
             alert(Alert.AlertType.INFORMATION, "Guardado", "Inventario guardado con ID: " + inv.idInventario);
+            loadInventario();
             onClear();
         } catch (Exception ex) {
             if (em.getTransaction().isActive()) em.getTransaction().rollback();
@@ -66,10 +97,76 @@ public class InventarioFormController {
         } finally { em.close(); }
     }
 
+    @FXML private void onUpdate() {
+        Inventario seleccionado = inventarioTable.getSelectionModel().getSelectedItem();
+        if (seleccionado == null) {
+            alert(Alert.AlertType.WARNING, "Seleccione un inventario", "Debe seleccionar un registro para actualizarlo.");
+            return;
+        }
+
+        Tienda t = tiendaCombo.getValue();
+        Producto p = productoCombo.getValue();
+        Integer stock = parseInt(stockField.getText(), "stock");
+        if (t == null || p == null || stock == null) { return; }
+
+        EntityManager em = JPAUtil.em();
+        try {
+            em.getTransaction().begin();
+            Inventario persistido = em.find(Inventario.class, seleccionado.idInventario);
+            if (persistido == null) {
+                alert(Alert.AlertType.ERROR, "No encontrado", "El registro ya no existe en la base de datos.");
+                em.getTransaction().rollback();
+                loadInventario();
+                return;
+            }
+            persistido.tienda = em.find(Tienda.class, t.idTienda);
+            persistido.producto = em.find(Producto.class, p.idProducto);
+            persistido.stock = stock;
+            em.getTransaction().commit();
+            alert(Alert.AlertType.INFORMATION, "Actualizado", "Inventario actualizado correctamente.");
+            loadInventario();
+            onClear();
+        } catch (Exception ex) {
+            if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            alert(Alert.AlertType.ERROR, "Error al actualizar", ex.getMessage());
+            ex.printStackTrace();
+        } finally { em.close(); }
+    }
+
+    @FXML private void onDelete() {
+        Inventario seleccionado = inventarioTable.getSelectionModel().getSelectedItem();
+        if (seleccionado == null) {
+            alert(Alert.AlertType.WARNING, "Seleccione un inventario", "Debe seleccionar un registro para eliminarlo.");
+            return;
+        }
+
+        EntityManager em = JPAUtil.em();
+        try {
+            em.getTransaction().begin();
+            Inventario persistido = em.find(Inventario.class, seleccionado.idInventario);
+            if (persistido == null) {
+                alert(Alert.AlertType.ERROR, "No encontrado", "El registro ya no existe en la base de datos.");
+                em.getTransaction().rollback();
+                loadInventario();
+                return;
+            }
+            em.remove(persistido);
+            em.getTransaction().commit();
+            alert(Alert.AlertType.INFORMATION, "Eliminado", "Inventario eliminado correctamente.");
+            loadInventario();
+            onClear();
+        } catch (Exception ex) {
+            if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            alert(Alert.AlertType.ERROR, "Error al eliminar", ex.getMessage());
+            ex.printStackTrace();
+        } finally { em.close(); }
+    }
+
     @FXML private void onClear() {
         tiendaCombo.getSelectionModel().clearSelection();
         productoCombo.getSelectionModel().clearSelection();
         stockField.clear();
+        inventarioTable.getSelectionModel().clearSelection();
         tiendaCombo.requestFocus();
     }
 
@@ -89,5 +186,36 @@ public class InventarioFormController {
         a.setContentText(content);
         a.showAndWait();
     }
-}
 
+    private void loadInventario() {
+        EntityManager em = JPAUtil.em();
+        try {
+            List<Inventario> lista = em.createQuery("select i from Inventario i order by i.idInventario", Inventario.class)
+                    .getResultList();
+            inventarios.setAll(lista);
+        } catch (Exception ex) {
+            alert(Alert.AlertType.ERROR, "Error al cargar", ex.getMessage());
+            ex.printStackTrace();
+        } finally {
+            em.close();
+        }
+    }
+
+    private <T> void selectComboValue(ComboBox<T> combo, Long id) {
+        if (id == null) {
+            combo.getSelectionModel().clearSelection();
+            return;
+        }
+        combo.getItems().stream()
+                .filter(item -> {
+                    if (item instanceof Tienda tienda) {
+                        return tienda.idTienda != null && tienda.idTienda.equals(id);
+                    } else if (item instanceof Producto producto) {
+                        return producto.idProducto != null && producto.idProducto.equals(id);
+                    }
+                    return false;
+                })
+                .findFirst()
+                .ifPresent(combo.getSelectionModel()::select);
+    }
+}

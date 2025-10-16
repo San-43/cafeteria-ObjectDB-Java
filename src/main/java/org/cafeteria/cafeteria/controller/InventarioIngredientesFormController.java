@@ -1,7 +1,9 @@
 package org.cafeteria.cafeteria.controller;
 
 import jakarta.persistence.EntityManager;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.StringConverter;
@@ -21,8 +23,45 @@ public class InventarioIngredientesFormController {
     @FXML private DatePicker fechaCaducidadPicker;
     @FXML private TextField costoCompraField;
     @FXML private TextField precioPorcionField;
+    @FXML private TableView<InventarioIngredientes> inventarioTable;
+    @FXML private TableColumn<InventarioIngredientes, Long> idColumn;
+    @FXML private TableColumn<InventarioIngredientes, String> tiendaColumn;
+    @FXML private TableColumn<InventarioIngredientes, String> ingredienteColumn;
+    @FXML private TableColumn<InventarioIngredientes, LocalDate> fechaCompraColumn;
+    @FXML private TableColumn<InventarioIngredientes, LocalDate> fechaCaducidadColumn;
+    @FXML private TableColumn<InventarioIngredientes, BigDecimal> costoColumn;
+    @FXML private TableColumn<InventarioIngredientes, BigDecimal> precioColumn;
 
-    @FXML private void initialize() { loadTiendas(); loadIngredientes(); }
+    private final ObservableList<InventarioIngredientes> inventarioIngredientes = FXCollections.observableArrayList();
+
+    @FXML private void initialize() {
+        loadTiendas();
+        loadIngredientes();
+
+        idColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().idInventarioIngredientes));
+        tiendaColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
+                cell.getValue().tienda != null ? cell.getValue().tienda.direccion : null));
+        ingredienteColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
+                cell.getValue().ingrediente != null ? cell.getValue().ingrediente.nombre : null));
+        fechaCompraColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().fechaCompra));
+        fechaCaducidadColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().fechaCaducidad));
+        costoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().costoCompra));
+        precioColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().precioVentaPorcion));
+
+        inventarioTable.setItems(inventarioIngredientes);
+        inventarioTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
+            if (selected != null) {
+                selectTienda(selected.tienda != null ? selected.tienda.idTienda : null);
+                selectIngrediente(selected.ingrediente != null ? selected.ingrediente.idIngrediente : null);
+                fechaCompraPicker.setValue(selected.fechaCompra);
+                fechaCaducidadPicker.setValue(selected.fechaCaducidad);
+                costoCompraField.setText(selected.costoCompra != null ? selected.costoCompra.toPlainString() : "");
+                precioPorcionField.setText(selected.precioVentaPorcion != null ? selected.precioVentaPorcion.toPlainString() : "");
+            }
+        });
+
+        loadInventarioIngredientes();
+    }
 
     private void loadTiendas() {
         EntityManager em = JPAUtil.em();
@@ -70,10 +109,82 @@ public class InventarioIngredientesFormController {
             em.persist(ii);
             em.getTransaction().commit();
             alert(Alert.AlertType.INFORMATION, "Guardado", "Inventario de ingrediente guardado con ID: " + ii.idInventarioIngredientes);
+            loadInventarioIngredientes();
             onClear();
         } catch (Exception ex) {
             if (em.getTransaction().isActive()) em.getTransaction().rollback();
             alert(Alert.AlertType.ERROR, "Error al guardar", ex.getMessage());
+            ex.printStackTrace();
+        } finally { em.close(); }
+    }
+
+    @FXML private void onUpdate() {
+        InventarioIngredientes seleccionado = inventarioTable.getSelectionModel().getSelectedItem();
+        if (seleccionado == null) {
+            alert(Alert.AlertType.WARNING, "Seleccione un registro", "Debe seleccionar un registro para actualizarlo.");
+            return;
+        }
+
+        Tienda t = tiendaCombo.getValue();
+        Ingrediente ing = ingredienteCombo.getValue();
+        LocalDate compra = fechaCompraPicker.getValue();
+        LocalDate cad = fechaCaducidadPicker.getValue();
+        BigDecimal costo = parseBigDecimal(costoCompraField.getText(), "costo de compra");
+        BigDecimal precio = parseBigDecimal(precioPorcionField.getText(), "precio por porción");
+        if (t==null || ing==null || compra==null || cad==null || costo==null || precio==null) return;
+
+        EntityManager em = JPAUtil.em();
+        try {
+            em.getTransaction().begin();
+            InventarioIngredientes persistido = em.find(InventarioIngredientes.class, seleccionado.idInventarioIngredientes);
+            if (persistido == null) {
+                alert(Alert.AlertType.ERROR, "No encontrado", "El registro ya no existe en la base de datos.");
+                em.getTransaction().rollback();
+                loadInventarioIngredientes();
+                return;
+            }
+            persistido.tienda = em.find(Tienda.class, t.idTienda);
+            persistido.ingrediente = em.find(Ingrediente.class, ing.idIngrediente);
+            persistido.fechaCompra = compra;
+            persistido.fechaCaducidad = cad;
+            persistido.costoCompra = costo;
+            persistido.precioVentaPorcion = precio;
+            em.getTransaction().commit();
+            alert(Alert.AlertType.INFORMATION, "Actualizado", "Registro actualizado correctamente.");
+            loadInventarioIngredientes();
+            onClear();
+        } catch (Exception ex) {
+            if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            alert(Alert.AlertType.ERROR, "Error al actualizar", ex.getMessage());
+            ex.printStackTrace();
+        } finally { em.close(); }
+    }
+
+    @FXML private void onDelete() {
+        InventarioIngredientes seleccionado = inventarioTable.getSelectionModel().getSelectedItem();
+        if (seleccionado == null) {
+            alert(Alert.AlertType.WARNING, "Seleccione un registro", "Debe seleccionar un registro para eliminarlo.");
+            return;
+        }
+
+        EntityManager em = JPAUtil.em();
+        try {
+            em.getTransaction().begin();
+            InventarioIngredientes persistido = em.find(InventarioIngredientes.class, seleccionado.idInventarioIngredientes);
+            if (persistido == null) {
+                alert(Alert.AlertType.ERROR, "No encontrado", "El registro ya no existe en la base de datos.");
+                em.getTransaction().rollback();
+                loadInventarioIngredientes();
+                return;
+            }
+            em.remove(persistido);
+            em.getTransaction().commit();
+            alert(Alert.AlertType.INFORMATION, "Eliminado", "Registro eliminado correctamente.");
+            loadInventarioIngredientes();
+            onClear();
+        } catch (Exception ex) {
+            if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            alert(Alert.AlertType.ERROR, "Error al eliminar", ex.getMessage());
             ex.printStackTrace();
         } finally { em.close(); }
     }
@@ -85,6 +196,7 @@ public class InventarioIngredientesFormController {
         fechaCaducidadPicker.setValue(null);
         costoCompraField.clear();
         precioPorcionField.clear();
+        inventarioTable.getSelectionModel().clearSelection();
         tiendaCombo.requestFocus();
     }
 
@@ -104,5 +216,42 @@ public class InventarioIngredientesFormController {
         a.setContentText(content);
         a.showAndWait();
     }
-}
 
+    private void loadInventarioIngredientes() {
+        EntityManager em = JPAUtil.em();
+        try {
+            List<InventarioIngredientes> lista = em.createQuery(
+                            "select i from InventarioIngredientes i order by i.idInventarioIngredientes",
+                            InventarioIngredientes.class)
+                    .getResultList();
+            inventarioIngredientes.setAll(lista);
+        } catch (Exception ex) {
+            alert(Alert.AlertType.ERROR, "Error al cargar", ex.getMessage());
+            ex.printStackTrace();
+        } finally {
+            em.close();
+        }
+    }
+
+    private void selectTienda(Long id) {
+        if (id == null) {
+            tiendaCombo.getSelectionModel().clearSelection();
+            return;
+        }
+        tiendaCombo.getItems().stream()
+                .filter(t -> t.idTienda != null && t.idTienda.equals(id))
+                .findFirst()
+                .ifPresent(tiendaCombo.getSelectionModel()::select);
+    }
+
+    private void selectIngrediente(Long id) {
+        if (id == null) {
+            ingredienteCombo.getSelectionModel().clearSelection();
+            return;
+        }
+        ingredienteCombo.getItems().stream()
+                .filter(i -> i.idIngrediente != null && i.idIngrediente.equals(id))
+                .findFirst()
+                .ifPresent(ingredienteCombo.getSelectionModel()::select);
+    }
+}

@@ -5,42 +5,60 @@
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="org.cafeteria.cafeteria.controller.InventarioIngredientesFormController">
     <center>
-        <GridPane hgap="10" vgap="10">
+        <VBox spacing="15">
             <padding>
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
-            <columnConstraints>
-                <ColumnConstraints percentWidth="30"/>
-                <ColumnConstraints percentWidth="70"/>
-            </columnConstraints>
             <children>
-                <Label text="Tienda:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                <ComboBox fx:id="tiendaCombo" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                <GridPane hgap="10" vgap="10">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="30"/>
+                        <ColumnConstraints percentWidth="70"/>
+                    </columnConstraints>
+                    <children>
+                        <Label text="Tienda:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                        <ComboBox fx:id="tiendaCombo" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-                <Label text="Ingrediente:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                <ComboBox fx:id="ingredienteCombo" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                        <Label text="Ingrediente:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <ComboBox fx:id="ingredienteCombo" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
-                <Label text="Fecha compra:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                <DatePicker fx:id="fechaCompraPicker" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                        <Label text="Fecha compra:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                        <DatePicker fx:id="fechaCompraPicker" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
 
-                <Label text="Fecha caducidad:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-                <DatePicker fx:id="fechaCaducidadPicker" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                        <Label text="Fecha caducidad:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                        <DatePicker fx:id="fechaCaducidadPicker" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
 
-                <Label text="Costo compra:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-                <TextField fx:id="costoCompraField" promptText="0.00" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+                        <Label text="Costo compra:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                        <TextField fx:id="costoCompraField" promptText="0.00" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
 
-                <Label text="Precio venta porción:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-                <TextField fx:id="precioPorcionField" promptText="0.00" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+                        <Label text="Precio venta porción:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                        <TextField fx:id="precioPorcionField" promptText="0.00" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+                    </children>
+                </GridPane>
+
+                <TableView fx:id="inventarioTable" prefHeight="250.0">
+                    <columns>
+                        <TableColumn fx:id="idColumn" text="ID" prefWidth="70.0"/>
+                        <TableColumn fx:id="tiendaColumn" text="Tienda" prefWidth="180.0"/>
+                        <TableColumn fx:id="ingredienteColumn" text="Ingrediente" prefWidth="180.0"/>
+                        <TableColumn fx:id="fechaCompraColumn" text="Fecha compra" prefWidth="140.0"/>
+                        <TableColumn fx:id="fechaCaducidadColumn" text="Fecha caducidad" prefWidth="150.0"/>
+                        <TableColumn fx:id="costoColumn" text="Costo compra" prefWidth="130.0"/>
+                        <TableColumn fx:id="precioColumn" text="Precio por porción" prefWidth="150.0"/>
+                    </columns>
+                </TableView>
             </children>
-        </GridPane>
+        </VBox>
     </center>
     <bottom>
         <HBox spacing="10" alignment="CENTER_RIGHT">
             <padding>
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
-            <Button text="Limpiar" onAction="#onClear"/>
             <Button text="Guardar" onAction="#onSave" defaultButton="true"/>
+            <Button text="Actualizar" onAction="#onUpdate"/>
+            <Button text="Eliminar" onAction="#onDelete"/>
+            <Button text="Limpiar" onAction="#onClear"/>
         </HBox>
     </bottom>
 </BorderPane>

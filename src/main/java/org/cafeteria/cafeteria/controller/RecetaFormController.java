@@ -1,7 +1,9 @@
 package org.cafeteria.cafeteria.controller;
 
 import jakarta.persistence.EntityManager;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.ComboBoxListCell;
@@ -17,10 +19,34 @@ public class RecetaFormController {
     @FXML private ComboBox<Producto> productoCombo;
     @FXML private TextField tamanoField;
     @FXML private TextField costoPrepField;
+    @FXML private TableView<Receta> recetasTable;
+    @FXML private TableColumn<Receta, Long> idColumn;
+    @FXML private TableColumn<Receta, String> productoColumn;
+    @FXML private TableColumn<Receta, String> tamanoColumn;
+    @FXML private TableColumn<Receta, BigDecimal> costoColumn;
+
+    private final ObservableList<Receta> recetas = FXCollections.observableArrayList();
 
     @FXML
     private void initialize() {
         loadProductos();
+
+        idColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().idReceta));
+        productoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
+                cell.getValue().producto != null ? cell.getValue().producto.descripcion : ""));
+        tamanoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().tamano));
+        costoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().costoPreparacion));
+
+        recetasTable.setItems(recetas);
+        recetasTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
+            if (selected != null) {
+                selectProducto(selected.producto != null ? selected.producto.idProducto : null);
+                tamanoField.setText(selected.tamano);
+                costoPrepField.setText(selected.costoPreparacion != null ? selected.costoPreparacion.toPlainString() : "");
+            }
+        });
+
+        loadRecetas();
     }
 
     private void loadProductos() {
@@ -60,6 +86,7 @@ public class RecetaFormController {
             em.persist(r);
             em.getTransaction().commit();
             alert(Alert.AlertType.INFORMATION, "Guardado", "Receta guardada con ID: " + r.idReceta);
+            loadRecetas();
             onClear();
         } catch (Exception ex) {
             if (em.getTransaction().isActive()) em.getTransaction().rollback();
@@ -69,10 +96,80 @@ public class RecetaFormController {
     }
 
     @FXML
+    private void onUpdate() {
+        Receta seleccionada = recetasTable.getSelectionModel().getSelectedItem();
+        if (seleccionada == null) {
+            alert(Alert.AlertType.WARNING, "Seleccione una receta", "Debe seleccionar una receta para actualizarla.");
+            return;
+        }
+
+        Producto prod = productoCombo.getValue();
+        if (prod == null) { alert(Alert.AlertType.WARNING, "Campo requerido", "Selecciona un producto."); return; }
+        String tam = tamanoField.getText();
+        if (tam == null || tam.isBlank()) { alert(Alert.AlertType.WARNING, "Campo requerido", "El tamaño es requerido."); return; }
+        BigDecimal costo = parseBigDecimal(costoPrepField.getText(), "costo de preparación");
+        if (costo == null) return;
+
+        EntityManager em = JPAUtil.em();
+        try {
+            em.getTransaction().begin();
+            Receta persistida = em.find(Receta.class, seleccionada.idReceta);
+            if (persistida == null) {
+                alert(Alert.AlertType.ERROR, "No encontrado", "La receta ya no existe en la base de datos.");
+                em.getTransaction().rollback();
+                loadRecetas();
+                return;
+            }
+            persistida.producto = em.find(Producto.class, prod.idProducto);
+            persistida.tamano = tam.trim();
+            persistida.costoPreparacion = costo;
+            em.getTransaction().commit();
+            alert(Alert.AlertType.INFORMATION, "Actualizado", "Receta actualizada correctamente.");
+            loadRecetas();
+            onClear();
+        } catch (Exception ex) {
+            if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            alert(Alert.AlertType.ERROR, "Error al actualizar", ex.getMessage());
+            ex.printStackTrace();
+        } finally { em.close(); }
+    }
+
+    @FXML
+    private void onDelete() {
+        Receta seleccionada = recetasTable.getSelectionModel().getSelectedItem();
+        if (seleccionada == null) {
+            alert(Alert.AlertType.WARNING, "Seleccione una receta", "Debe seleccionar una receta para eliminarla.");
+            return;
+        }
+
+        EntityManager em = JPAUtil.em();
+        try {
+            em.getTransaction().begin();
+            Receta persistida = em.find(Receta.class, seleccionada.idReceta);
+            if (persistida == null) {
+                alert(Alert.AlertType.ERROR, "No encontrado", "La receta ya no existe en la base de datos.");
+                em.getTransaction().rollback();
+                loadRecetas();
+                return;
+            }
+            em.remove(persistida);
+            em.getTransaction().commit();
+            alert(Alert.AlertType.INFORMATION, "Eliminado", "Receta eliminada correctamente.");
+            loadRecetas();
+            onClear();
+        } catch (Exception ex) {
+            if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            alert(Alert.AlertType.ERROR, "Error al eliminar", ex.getMessage());
+            ex.printStackTrace();
+        } finally { em.close(); }
+    }
+
+    @FXML
     private void onClear() {
         productoCombo.getSelectionModel().clearSelection();
         tamanoField.clear();
         costoPrepField.clear();
+        recetasTable.getSelectionModel().clearSelection();
         productoCombo.requestFocus();
     }
 
@@ -92,5 +189,27 @@ public class RecetaFormController {
         a.setContentText(content);
         a.showAndWait();
     }
-}
 
+    private void loadRecetas() {
+        EntityManager em = JPAUtil.em();
+        try {
+            List<Receta> lista = em.createQuery("select r from Receta r order by r.idReceta", Receta.class)
+                    .getResultList();
+            recetas.setAll(lista);
+        } catch (Exception ex) {
+            alert(Alert.AlertType.ERROR, "Error al cargar", ex.getMessage());
+            ex.printStackTrace();
+        } finally { em.close(); }
+    }
+
+    private void selectProducto(Long id) {
+        if (id == null) {
+            productoCombo.getSelectionModel().clearSelection();
+            return;
+        }
+        productoCombo.getItems().stream()
+                .filter(prod -> prod.idProducto != null && prod.idProducto.equals(id))
+                .findFirst()
+                .ifPresent(productoCombo.getSelectionModel()::select);
+    }
+}

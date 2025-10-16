@@ -1,7 +1,9 @@
 package org.cafeteria.cafeteria.controller;
 
 import jakarta.persistence.EntityManager;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.StringConverter;
@@ -18,8 +20,39 @@ public class ProductoVendidoFormController {
     @FXML private ComboBox<Producto> productoCombo;
     @FXML private TextField cantidadField;
     @FXML private TextField precioField;
+    @FXML private TableView<ProductoVendido> vendidosTable;
+    @FXML private TableColumn<ProductoVendido, Long> idColumn;
+    @FXML private TableColumn<ProductoVendido, String> ventaColumn;
+    @FXML private TableColumn<ProductoVendido, String> productoColumn;
+    @FXML private TableColumn<ProductoVendido, Integer> cantidadColumn;
+    @FXML private TableColumn<ProductoVendido, BigDecimal> precioColumn;
 
-    @FXML private void initialize() { loadVentas(); loadProductos(); }
+    private final ObservableList<ProductoVendido> vendidos = FXCollections.observableArrayList();
+
+    @FXML private void initialize() {
+        loadVentas();
+        loadProductos();
+
+        idColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().idProductoVendido));
+        ventaColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
+                cell.getValue().venta != null ? "#" + cell.getValue().venta.idVenta + " — " + cell.getValue().venta.fecha : ""));
+        productoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
+                cell.getValue().producto != null ? cell.getValue().producto.descripcion : ""));
+        cantidadColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().cantidad));
+        precioColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().precio));
+
+        vendidosTable.setItems(vendidos);
+        vendidosTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
+            if (selected != null) {
+                selectVenta(selected.venta != null ? selected.venta.idVenta : null);
+                selectProducto(selected.producto != null ? selected.producto.idProducto : null);
+                cantidadField.setText(selected.cantidad != null ? selected.cantidad.toString() : "");
+                precioField.setText(selected.precio != null ? selected.precio.toPlainString() : "");
+            }
+        });
+
+        loadVendidos();
+    }
 
     private void loadVentas() {
         EntityManager em = JPAUtil.em();
@@ -63,10 +96,78 @@ public class ProductoVendidoFormController {
             em.persist(pv);
             em.getTransaction().commit();
             alert(Alert.AlertType.INFORMATION, "Guardado", "Producto vendido guardado con ID: " + pv.idProductoVendido);
+            loadVendidos();
             onClear();
         } catch (Exception ex) {
             if (em.getTransaction().isActive()) em.getTransaction().rollback();
             alert(Alert.AlertType.ERROR, "Error al guardar", ex.getMessage());
+            ex.printStackTrace();
+        } finally { em.close(); }
+    }
+
+    @FXML private void onUpdate() {
+        ProductoVendido seleccionado = vendidosTable.getSelectionModel().getSelectedItem();
+        if (seleccionado == null) {
+            alert(Alert.AlertType.WARNING, "Seleccione un registro", "Debe seleccionar un registro para actualizarlo.");
+            return;
+        }
+
+        Venta v = ventaCombo.getValue();
+        Producto p = productoCombo.getValue();
+        Integer cant = parseInt(cantidadField.getText(), "cantidad");
+        BigDecimal precio = parseBigDecimal(precioField.getText(), "precio");
+        if (v==null || p==null || cant==null || precio==null) return;
+
+        EntityManager em = JPAUtil.em();
+        try {
+            em.getTransaction().begin();
+            ProductoVendido persistido = em.find(ProductoVendido.class, seleccionado.idProductoVendido);
+            if (persistido == null) {
+                alert(Alert.AlertType.ERROR, "No encontrado", "El registro ya no existe en la base de datos.");
+                em.getTransaction().rollback();
+                loadVendidos();
+                return;
+            }
+            persistido.venta = em.find(Venta.class, v.idVenta);
+            persistido.producto = em.find(Producto.class, p.idProducto);
+            persistido.cantidad = cant;
+            persistido.precio = precio;
+            em.getTransaction().commit();
+            alert(Alert.AlertType.INFORMATION, "Actualizado", "Registro actualizado correctamente.");
+            loadVendidos();
+            onClear();
+        } catch (Exception ex) {
+            if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            alert(Alert.AlertType.ERROR, "Error al actualizar", ex.getMessage());
+            ex.printStackTrace();
+        } finally { em.close(); }
+    }
+
+    @FXML private void onDelete() {
+        ProductoVendido seleccionado = vendidosTable.getSelectionModel().getSelectedItem();
+        if (seleccionado == null) {
+            alert(Alert.AlertType.WARNING, "Seleccione un registro", "Debe seleccionar un registro para eliminarlo.");
+            return;
+        }
+
+        EntityManager em = JPAUtil.em();
+        try {
+            em.getTransaction().begin();
+            ProductoVendido persistido = em.find(ProductoVendido.class, seleccionado.idProductoVendido);
+            if (persistido == null) {
+                alert(Alert.AlertType.ERROR, "No encontrado", "El registro ya no existe en la base de datos.");
+                em.getTransaction().rollback();
+                loadVendidos();
+                return;
+            }
+            em.remove(persistido);
+            em.getTransaction().commit();
+            alert(Alert.AlertType.INFORMATION, "Eliminado", "Registro eliminado correctamente.");
+            loadVendidos();
+            onClear();
+        } catch (Exception ex) {
+            if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            alert(Alert.AlertType.ERROR, "Error al eliminar", ex.getMessage());
             ex.printStackTrace();
         } finally { em.close(); }
     }
@@ -76,6 +177,7 @@ public class ProductoVendidoFormController {
         productoCombo.getSelectionModel().clearSelection();
         cantidadField.clear();
         precioField.clear();
+        vendidosTable.getSelectionModel().clearSelection();
         ventaCombo.requestFocus();
     }
 
@@ -105,5 +207,40 @@ public class ProductoVendidoFormController {
         a.setContentText(content);
         a.showAndWait();
     }
-}
 
+    private void loadVendidos() {
+        EntityManager em = JPAUtil.em();
+        try {
+            List<ProductoVendido> lista = em.createQuery(
+                            "select pv from ProductoVendido pv order by pv.idProductoVendido",
+                            ProductoVendido.class)
+                    .getResultList();
+            vendidos.setAll(lista);
+        } catch (Exception ex) {
+            alert(Alert.AlertType.ERROR, "Error al cargar", ex.getMessage());
+            ex.printStackTrace();
+        } finally { em.close(); }
+    }
+
+    private void selectVenta(Long id) {
+        if (id == null) {
+            ventaCombo.getSelectionModel().clearSelection();
+            return;
+        }
+        ventaCombo.getItems().stream()
+                .filter(v -> v.idVenta != null && v.idVenta.equals(id))
+                .findFirst()
+                .ifPresent(ventaCombo.getSelectionModel()::select);
+    }
+
+    private void selectProducto(Long id) {
+        if (id == null) {
+            productoCombo.getSelectionModel().clearSelection();
+            return;
+        }
+        productoCombo.getItems().stream()
+                .filter(prod -> prod.idProducto != null && prod.idProducto.equals(id))
+                .findFirst()
+                .ifPresent(productoCombo.getSelectionModel()::select);
+    }
+}
