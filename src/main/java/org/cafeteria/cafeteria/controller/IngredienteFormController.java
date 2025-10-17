@@ -39,13 +39,13 @@ public class IngredienteFormController {
         descripcionColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().descripcion));
         preparacionColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().preparacion));
 
-        // Datos + ordenado/filtrado
+
         filteredIngredientes = new FilteredList<>(ingredientes, it -> true);
         SortedList<Ingrediente> sorted = new SortedList<>(filteredIngredientes);
         sorted.comparatorProperty().bind(ingredientesTable.comparatorProperty());
         ingredientesTable.setItems(sorted);
 
-        // Selección para llenar los campos de edición
+
         ingredientesTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
             if (selected != null) {
                 nombreField.setText(selected.nombre);
@@ -63,9 +63,6 @@ public class IngredienteFormController {
         if (searchTextField != null) {
             searchTextField.textProperty().addListener((o, a, b) -> applyFilter());
         }
-
-        // Cargar datos al abrir la vista
-        loadIngredientes();
     }
 
     private void applyFilter() {
