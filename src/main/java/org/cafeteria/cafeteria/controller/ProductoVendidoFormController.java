@@ -124,6 +124,10 @@ public class ProductoVendidoFormController {
         } finally { em.close(); }
     }
 
+    @FXML private void onList() {
+        loadVendidos();
+    }
+
     @FXML private void onSave() {
         Venta v = ventaCombo.getValue();
         Producto p = productoCombo.getValue();

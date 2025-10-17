@@ -92,6 +92,11 @@ public class ProductoFormController {
     private String safeLower(String s) { return s == null ? "" : s.toLowerCase().trim(); }
 
     @FXML
+    private void onList() {
+        loadProductos();
+    }
+
+    @FXML
     private void onSave() {
         String desc = descripcionField.getText();
         if (desc == null || desc.isBlank()) {

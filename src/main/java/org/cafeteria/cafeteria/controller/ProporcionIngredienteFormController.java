@@ -75,6 +75,10 @@ public class ProporcionIngredienteFormController {
         } finally { em.close(); }
     }
 
+    @FXML private void onList() {
+        loadProporciones();
+    }
+
     @FXML private void onSave() {
         Receta r = recetaCombo.getValue();
         Ingrediente i = ingredienteCombo.getValue();

@@ -87,6 +87,11 @@ public class TiendaFormController {
     private String safeLower(String s) { return s == null ? "" : s.toLowerCase().trim(); }
 
     @FXML
+    private void onList() {
+        loadTiendas();
+    }
+
+    @FXML
     private void onSave() {
         String telefono = telefonoField.getText();
         String direccion = direccionField.getText();

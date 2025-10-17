@@ -138,6 +138,10 @@ public class InventarioIngredientesFormController {
         } finally { em.close(); }
     }
 
+    @FXML private void onList() {
+        loadInventarioIngredientes();
+    }
+
     @FXML private void onSave() {
         Tienda t = tiendaCombo.getValue();
         Ingrediente ing = ingredienteCombo.getValue();
