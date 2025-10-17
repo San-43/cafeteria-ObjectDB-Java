@@ -4,6 +4,8 @@ import jakarta.persistence.EntityManager;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.StringConverter;
@@ -13,6 +15,7 @@ import org.cafeteria.cafeteria.model.Producto;
 import org.cafeteria.cafeteria.model.Tienda;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 public class InventarioFormController {
     @FXML private ComboBox<Tienda> tiendaCombo;
@@ -23,8 +26,12 @@ public class InventarioFormController {
     @FXML private TableColumn<Inventario, String> tiendaColumn;
     @FXML private TableColumn<Inventario, String> productoColumn;
     @FXML private TableColumn<Inventario, Integer> stockColumn;
+    // Buscador
+    @FXML private ComboBox<String> searchFieldCombo;
+    @FXML private TextField searchTextField;
 
     private final ObservableList<Inventario> inventarios = FXCollections.observableArrayList();
+    private FilteredList<Inventario> filteredInventarios;
 
     @FXML private void initialize() {
         loadTiendas();
@@ -37,7 +44,12 @@ public class InventarioFormController {
                 cell.getValue().producto != null ? cell.getValue().producto.descripcion : null));
         stockColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().stock));
 
-        inventarioTable.setItems(inventarios);
+        // Filtrado/ordenado
+        filteredInventarios = new FilteredList<>(inventarios, it -> true);
+        SortedList<Inventario> sorted = new SortedList<>(filteredInventarios);
+        sorted.comparatorProperty().bind(inventarioTable.comparatorProperty());
+        inventarioTable.setItems(sorted);
+
         inventarioTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
             if (selected != null) {
                 selectComboValue(tiendaCombo, selected.tienda != null ? selected.tienda.idTienda : null);
@@ -46,8 +58,50 @@ public class InventarioFormController {
             }
         });
 
+        // Buscador
+        if (searchFieldCombo != null) {
+            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Tienda", "Producto", "Stock"));
+            searchFieldCombo.getSelectionModel().selectFirst();
+            searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
+        }
+        if (searchTextField != null) {
+            searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
+        }
+
         loadInventario();
     }
+
+    private void applyFilter() {
+        if (filteredInventarios == null) return;
+        String q = searchTextField != null ? safeLower(searchTextField.getText()) : "";
+        String field = searchFieldCombo != null ? searchFieldCombo.getSelectionModel().getSelectedItem() : "Todos";
+        if (q.isBlank()) { filteredInventarios.setPredicate(it -> true); return; }
+        filteredInventarios.setPredicate(makePredicate(field, q));
+    }
+
+    private Predicate<Inventario> makePredicate(String field, String q) {
+        final String selectedField = (field == null) ? "Todos" : field;
+        return it -> {
+            String id = it.idInventario != null ? String.valueOf(it.idInventario).toLowerCase() : "";
+            String tienda = it.tienda != null ? safeLower(it.tienda.direccion) : "";
+            String producto = it.producto != null ? safeLower(it.producto.descripcion) : "";
+            String stock = it.stock != null ? String.valueOf(it.stock).toLowerCase() : "";
+            switch (selectedField) {
+                case "ID":
+                    return id.contains(q);
+                case "Tienda":
+                    return tienda.contains(q);
+                case "Producto":
+                    return producto.contains(q);
+                case "Stock":
+                    return stock.contains(q);
+                default: // "Todos"
+                    return id.contains(q) || tienda.contains(q) || producto.contains(q) || stock.contains(q);
+            }
+        };
+    }
+
+    private String safeLower(String s) { return s == null ? "" : s.toLowerCase().trim(); }
 
     private void loadTiendas() {
         EntityManager em = JPAUtil.em();
@@ -193,6 +247,7 @@ public class InventarioFormController {
             List<Inventario> lista = em.createQuery("select i from Inventario i order by i.idInventario", Inventario.class)
                     .getResultList();
             inventarios.setAll(lista);
+            applyFilter();
         } catch (Exception ex) {
             alert(Alert.AlertType.ERROR, "Error al cargar", ex.getMessage());
             ex.printStackTrace();

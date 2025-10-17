@@ -4,11 +4,14 @@ import jakarta.persistence.EntityManager;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ComboBox;
 import org.cafeteria.cafeteria.config.JPAUtil;
 import org.cafeteria.cafeteria.model.Producto;
 
@@ -24,8 +27,12 @@ public class ProductoFormController {
     @FXML private TableColumn<Producto, String> descripcionColumn;
     @FXML private TableColumn<Producto, BigDecimal> costoColumn;
     @FXML private TableColumn<Producto, BigDecimal> precioColumn;
+    // Buscador
+    @FXML private ComboBox<String> searchFieldCombo;
+    @FXML private TextField searchTextField;
 
     private final ObservableList<Producto> productos = FXCollections.observableArrayList();
+    private FilteredList<Producto> filteredProductos;
 
     @FXML
     private void initialize() {
@@ -34,7 +41,12 @@ public class ProductoFormController {
         costoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().costo));
         precioColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().precioVenta));
 
-        productosTable.setItems(productos);
+        // Datos + ordenado/filtrado
+        filteredProductos = new FilteredList<>(productos, it -> true);
+        SortedList<Producto> sorted = new SortedList<>(filteredProductos);
+        sorted.comparatorProperty().bind(productosTable.comparatorProperty());
+        productosTable.setItems(sorted);
+
         productosTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
             if (selected != null) {
                 descripcionField.setText(selected.descripcion);
@@ -43,8 +55,41 @@ public class ProductoFormController {
             }
         });
 
+        // Buscador
+        if (searchFieldCombo != null) {
+            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Descripción", "Costo", "Precio"));
+            searchFieldCombo.getSelectionModel().selectFirst();
+            searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
+        }
+        if (searchTextField != null) {
+            searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
+        }
+
         loadProductos();
     }
+
+    private void applyFilter() {
+        if (filteredProductos == null) return;
+        String q = searchTextField != null ? safeLower(searchTextField.getText()) : "";
+        String field = searchFieldCombo != null ? searchFieldCombo.getSelectionModel().getSelectedItem() : "Todos";
+        if (q.isBlank()) { filteredProductos.setPredicate(it -> true); return; }
+        final String selectedField = (field == null) ? "Todos" : field;
+        filteredProductos.setPredicate(it -> {
+            String id = it.idProducto != null ? String.valueOf(it.idProducto).toLowerCase() : "";
+            String desc = safeLower(it.descripcion);
+            String costo = it.costo != null ? it.costo.toPlainString().toLowerCase() : "";
+            String precio = it.precioVenta != null ? it.precioVenta.toPlainString().toLowerCase() : "";
+            switch (selectedField) {
+                case "ID": return id.contains(q);
+                case "Descripción": return desc.contains(q);
+                case "Costo": return costo.contains(q);
+                case "Precio": return precio.contains(q);
+                default: return id.contains(q) || desc.contains(q) || costo.contains(q) || precio.contains(q);
+            }
+        });
+    }
+
+    private String safeLower(String s) { return s == null ? "" : s.toLowerCase().trim(); }
 
     @FXML
     private void onSave() {
@@ -183,6 +228,7 @@ public class ProductoFormController {
             List<Producto> resultado = em.createQuery("SELECT p FROM Producto p ORDER BY p.idProducto", Producto.class)
                     .getResultList();
             productos.setAll(resultado);
+            applyFilter();
         } catch (Exception ex) {
             alert(Alert.AlertType.ERROR, "Error al cargar", ex.getMessage());
             ex.printStackTrace();

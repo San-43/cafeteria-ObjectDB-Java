@@ -27,6 +27,12 @@
                     </children>
                 </GridPane>
 
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Buscar por:"/>
+                    <ComboBox fx:id="searchFieldCombo" prefWidth="180"/>
+                    <TextField fx:id="searchTextField" promptText="Escribe para buscar..." HBox.hgrow="ALWAYS"/>
+                </HBox>
+
                 <TableView fx:id="proporcionesTable" prefHeight="250.0">
                     <columns>
                         <TableColumn fx:id="idColumn" text="ID" prefWidth="70.0"/>

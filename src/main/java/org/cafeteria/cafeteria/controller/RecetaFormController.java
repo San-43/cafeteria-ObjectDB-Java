@@ -4,9 +4,10 @@ import jakarta.persistence.EntityManager;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.ComboBoxListCell;
 import javafx.util.StringConverter;
 import org.cafeteria.cafeteria.config.JPAUtil;
 import org.cafeteria.cafeteria.model.Producto;
@@ -24,8 +25,12 @@ public class RecetaFormController {
     @FXML private TableColumn<Receta, String> productoColumn;
     @FXML private TableColumn<Receta, String> tamanoColumn;
     @FXML private TableColumn<Receta, BigDecimal> costoColumn;
+    // Buscador
+    @FXML private ComboBox<String> searchFieldCombo;
+    @FXML private TextField searchTextField;
 
     private final ObservableList<Receta> recetas = FXCollections.observableArrayList();
+    private FilteredList<Receta> filteredRecetas;
 
     @FXML
     private void initialize() {
@@ -37,7 +42,12 @@ public class RecetaFormController {
         tamanoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().tamano));
         costoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().costoPreparacion));
 
-        recetasTable.setItems(recetas);
+        // Tabla con filtrado/ordenado
+        filteredRecetas = new FilteredList<>(recetas, it -> true);
+        SortedList<Receta> sorted = new SortedList<>(filteredRecetas);
+        sorted.comparatorProperty().bind(recetasTable.comparatorProperty());
+        recetasTable.setItems(sorted);
+
         recetasTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
             if (selected != null) {
                 selectProducto(selected.producto != null ? selected.producto.idProducto : null);
@@ -46,8 +56,41 @@ public class RecetaFormController {
             }
         });
 
+        // Buscador
+        if (searchFieldCombo != null) {
+            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Producto", "Tamaño", "Costo"));
+            searchFieldCombo.getSelectionModel().selectFirst();
+            searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
+        }
+        if (searchTextField != null) {
+            searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
+        }
+
         loadRecetas();
     }
+
+    private void applyFilter() {
+        if (filteredRecetas == null) return;
+        String q = searchTextField != null ? safeLower(searchTextField.getText()) : "";
+        String field = searchFieldCombo != null ? searchFieldCombo.getSelectionModel().getSelectedItem() : "Todos";
+        if (q.isBlank()) { filteredRecetas.setPredicate(it -> true); return; }
+        final String selectedField = (field == null) ? "Todos" : field;
+        filteredRecetas.setPredicate(it -> {
+            String id = it.idReceta != null ? String.valueOf(it.idReceta).toLowerCase() : "";
+            String prod = it.producto != null ? safeLower(it.producto.descripcion) : "";
+            String tam = safeLower(it.tamano);
+            String costo = it.costoPreparacion != null ? it.costoPreparacion.toPlainString().toLowerCase() : "";
+            switch (selectedField) {
+                case "ID": return id.contains(q);
+                case "Producto": return prod.contains(q);
+                case "Tamaño": return tam.contains(q);
+                case "Costo": return costo.contains(q);
+                default: return id.contains(q) || prod.contains(q) || tam.contains(q) || costo.contains(q);
+            }
+        });
+    }
+
+    private String safeLower(String s) { return s == null ? "" : s.toLowerCase().trim(); }
 
     private void loadProductos() {
         EntityManager em = JPAUtil.em();
@@ -196,6 +239,7 @@ public class RecetaFormController {
             List<Receta> lista = em.createQuery("select r from Receta r order by r.idReceta", Receta.class)
                     .getResultList();
             recetas.setAll(lista);
+            applyFilter();
         } catch (Exception ex) {
             alert(Alert.AlertType.ERROR, "Error al cargar", ex.getMessage());
             ex.printStackTrace();

@@ -4,6 +4,8 @@ import jakarta.persistence.EntityManager;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.StringConverter;
@@ -26,8 +28,12 @@ public class ProductoVendidoFormController {
     @FXML private TableColumn<ProductoVendido, String> productoColumn;
     @FXML private TableColumn<ProductoVendido, Integer> cantidadColumn;
     @FXML private TableColumn<ProductoVendido, BigDecimal> precioColumn;
+    // Buscador
+    @FXML private ComboBox<String> searchFieldCombo;
+    @FXML private TextField searchTextField;
 
     private final ObservableList<ProductoVendido> vendidos = FXCollections.observableArrayList();
+    private FilteredList<ProductoVendido> filteredVendidos;
 
     @FXML private void initialize() {
         loadVentas();
@@ -41,7 +47,12 @@ public class ProductoVendidoFormController {
         cantidadColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().cantidad));
         precioColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().precio));
 
-        vendidosTable.setItems(vendidos);
+        // Filtrado/ordenado
+        filteredVendidos = new FilteredList<>(vendidos, it -> true);
+        SortedList<ProductoVendido> sorted = new SortedList<>(filteredVendidos);
+        sorted.comparatorProperty().bind(vendidosTable.comparatorProperty());
+        vendidosTable.setItems(sorted);
+
         vendidosTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
             if (selected != null) {
                 selectVenta(selected.venta != null ? selected.venta.idVenta : null);
@@ -51,8 +62,43 @@ public class ProductoVendidoFormController {
             }
         });
 
+        // Buscador
+        if (searchFieldCombo != null) {
+            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Venta", "Producto", "Cantidad", "Precio"));
+            searchFieldCombo.getSelectionModel().selectFirst();
+            searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
+        }
+        if (searchTextField != null) {
+            searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
+        }
+
         loadVendidos();
     }
+
+    private void applyFilter() {
+        if (filteredVendidos == null) return;
+        String q = searchTextField != null ? safeLower(searchTextField.getText()) : "";
+        String field = searchFieldCombo != null ? searchFieldCombo.getSelectionModel().getSelectedItem() : "Todos";
+        if (q.isBlank()) { filteredVendidos.setPredicate(it -> true); return; }
+        final String selectedField = (field == null) ? "Todos" : field;
+        filteredVendidos.setPredicate(it -> {
+            String id = it.idProductoVendido != null ? String.valueOf(it.idProductoVendido).toLowerCase() : "";
+            String venta = it.venta != null ? safeLower("#"+it.venta.idVenta + " " + it.venta.fecha.toString()) : "";
+            String prod = it.producto != null ? safeLower(it.producto.descripcion) : "";
+            String cant = it.cantidad != null ? String.valueOf(it.cantidad).toLowerCase() : "";
+            String precio = it.precio != null ? it.precio.toPlainString().toLowerCase() : "";
+            switch (selectedField) {
+                case "ID": return id.contains(q);
+                case "Venta": return venta.contains(q);
+                case "Producto": return prod.contains(q);
+                case "Cantidad": return cant.contains(q);
+                case "Precio": return precio.contains(q);
+                default: return id.contains(q) || venta.contains(q) || prod.contains(q) || cant.contains(q) || precio.contains(q);
+            }
+        });
+    }
+
+    private String safeLower(String s) { return s == null ? "" : s.toLowerCase().trim(); }
 
     private void loadVentas() {
         EntityManager em = JPAUtil.em();
@@ -216,6 +262,7 @@ public class ProductoVendidoFormController {
                             ProductoVendido.class)
                     .getResultList();
             vendidos.setAll(lista);
+            applyFilter();
         } catch (Exception ex) {
             alert(Alert.AlertType.ERROR, "Error al cargar", ex.getMessage());
             ex.printStackTrace();
@@ -244,3 +291,4 @@ public class ProductoVendidoFormController {
                 .ifPresent(productoCombo.getSelectionModel()::select);
     }
 }
+

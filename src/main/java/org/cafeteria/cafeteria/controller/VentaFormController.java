@@ -4,6 +4,8 @@ import jakarta.persistence.EntityManager;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.StringConverter;
@@ -28,8 +30,12 @@ public class VentaFormController {
     @FXML private TableColumn<Venta, String> tiendaColumn;
     @FXML private TableColumn<Venta, LocalDateTime> fechaColumn;
     @FXML private TableColumn<Venta, BigDecimal> totalColumn;
+    // Buscador
+    @FXML private ComboBox<String> searchFieldCombo;
+    @FXML private TextField searchTextField;
 
     private final ObservableList<Venta> ventas = FXCollections.observableArrayList();
+    private FilteredList<Venta> filteredVentas;
 
     @FXML private void initialize() {
         loadTiendas();
@@ -42,17 +48,35 @@ public class VentaFormController {
         fechaColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().fecha));
         totalColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().total));
 
-        ventasTable.setItems(ventas);
+        // Filtrado/ordenado
+        filteredVentas = new FilteredList<>(ventas, it -> true);
+        SortedList<Venta> sorted = new SortedList<>(filteredVentas);
+        sorted.comparatorProperty().bind(ventasTable.comparatorProperty());
+        ventasTable.setItems(sorted);
+
         ventasTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
             if (selected != null) {
                 selectTienda(selected.tienda != null ? selected.tienda.idTienda : null);
                 if (selected.fecha != null) {
                     fechaPicker.setValue(selected.fecha.toLocalDate());
                     horaField.setText(selected.fecha.toLocalTime().withSecond(0).withNano(0).toString());
+                } else {
+                    fechaPicker.setValue(LocalDate.now());
+                    horaField.setText("");
                 }
                 totalField.setText(selected.total != null ? selected.total.toPlainString() : "");
             }
         });
+
+        // Buscador
+        if (searchFieldCombo != null) {
+            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Tienda", "Fecha", "Total"));
+            searchFieldCombo.getSelectionModel().selectFirst();
+            searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
+        }
+        if (searchTextField != null) {
+            searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
+        }
 
         loadVentas();
     }
@@ -68,6 +92,29 @@ public class VentaFormController {
             });
         } finally { em.close(); }
     }
+
+    private void applyFilter() {
+        if (filteredVentas == null) return;
+        String q = searchTextField != null ? safeLower(searchTextField.getText()) : "";
+        String field = searchFieldCombo != null ? searchFieldCombo.getSelectionModel().getSelectedItem() : "Todos";
+        if (q.isBlank()) { filteredVentas.setPredicate(it -> true); return; }
+        final String selectedField = (field == null) ? "Todos" : field;
+        filteredVentas.setPredicate(it -> {
+            String id = it.idVenta != null ? String.valueOf(it.idVenta).toLowerCase() : "";
+            String tienda = it.tienda != null ? safeLower(it.tienda.direccion) : "";
+            String fecha = it.fecha != null ? safeLower(it.fecha.toString()) : "";
+            String total = it.total != null ? it.total.toPlainString().toLowerCase() : "";
+            switch (selectedField) {
+                case "ID": return id.contains(q);
+                case "Tienda": return tienda.contains(q);
+                case "Fecha": return fecha.contains(q);
+                case "Total": return total.contains(q);
+                default: return id.contains(q) || tienda.contains(q) || fecha.contains(q) || total.contains(q);
+            }
+        });
+    }
+
+    private String safeLower(String s) { return s == null ? "" : s.toLowerCase().trim(); }
 
     @FXML private void onSave() {
         Tienda t = tiendaCombo.getValue();
@@ -207,6 +254,7 @@ public class VentaFormController {
             List<Venta> lista = em.createQuery("select v from Venta v order by v.idVenta", Venta.class)
                     .getResultList();
             ventas.setAll(lista);
+            applyFilter();
         } catch (Exception ex) {
             alert(Alert.AlertType.ERROR, "Error al cargar", ex.getMessage());
             ex.printStackTrace();

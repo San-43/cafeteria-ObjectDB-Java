@@ -4,6 +4,8 @@ import jakarta.persistence.EntityManager;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.StringConverter;
@@ -20,8 +22,12 @@ public class PasoFormController {
     @FXML private TableColumn<Paso, Long> idColumn;
     @FXML private TableColumn<Paso, String> recetaColumn;
     @FXML private TableColumn<Paso, String> descripcionColumn;
+    // Buscador
+    @FXML private ComboBox<String> searchFieldCombo;
+    @FXML private TextField searchTextField;
 
     private final ObservableList<Paso> pasos = FXCollections.observableArrayList();
+    private FilteredList<Paso> filteredPasos;
 
     @FXML private void initialize() {
         loadRecetas();
@@ -33,7 +39,12 @@ public class PasoFormController {
                         : ""));
         descripcionColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().pasoDescripcion));
 
-        pasosTable.setItems(pasos);
+        // Filtrado/ordenado
+        filteredPasos = new FilteredList<>(pasos, it -> true);
+        SortedList<Paso> sorted = new SortedList<>(filteredPasos);
+        sorted.comparatorProperty().bind(pasosTable.comparatorProperty());
+        pasosTable.setItems(sorted);
+
         pasosTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
             if (selected != null) {
                 selectReceta(selected.receta != null ? selected.receta.idReceta : null);
@@ -41,8 +52,39 @@ public class PasoFormController {
             }
         });
 
+        // Buscador
+        if (searchFieldCombo != null) {
+            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Receta", "Descripción"));
+            searchFieldCombo.getSelectionModel().selectFirst();
+            searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
+        }
+        if (searchTextField != null) {
+            searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
+        }
+
         loadPasos();
     }
+
+    private void applyFilter() {
+        if (filteredPasos == null) return;
+        String q = searchTextField != null ? safeLower(searchTextField.getText()) : "";
+        String field = searchFieldCombo != null ? searchFieldCombo.getSelectionModel().getSelectedItem() : "Todos";
+        if (q.isBlank()) { filteredPasos.setPredicate(it -> true); return; }
+        final String selectedField = (field == null) ? "Todos" : field;
+        filteredPasos.setPredicate(it -> {
+            String id = it.idPaso != null ? String.valueOf(it.idPaso).toLowerCase() : "";
+            String receta = (it.receta!=null && it.receta.producto!=null ? safeLower(it.receta.producto.descripcion + " " + it.receta.tamano) : "");
+            String desc = safeLower(it.pasoDescripcion);
+            switch (selectedField) {
+                case "ID": return id.contains(q);
+                case "Receta": return receta.contains(q);
+                case "Descripción": return desc.contains(q);
+                default: return id.contains(q) || receta.contains(q) || desc.contains(q);
+            }
+        });
+    }
+
+    private String safeLower(String s) { return s == null ? "" : s.toLowerCase().trim(); }
 
     private void loadRecetas() {
         EntityManager em = JPAUtil.em();
@@ -166,6 +208,7 @@ public class PasoFormController {
         try {
             List<Paso> lista = em.createQuery("select p from Paso p order by p.idPaso", Paso.class).getResultList();
             pasos.setAll(lista);
+            applyFilter();
         } catch (Exception ex) {
             alert(Alert.AlertType.ERROR, "Error al cargar", ex.getMessage());
             ex.printStackTrace();

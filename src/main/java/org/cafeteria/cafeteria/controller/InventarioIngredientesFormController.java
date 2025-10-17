@@ -4,6 +4,8 @@ import jakarta.persistence.EntityManager;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.StringConverter;
@@ -31,8 +33,12 @@ public class InventarioIngredientesFormController {
     @FXML private TableColumn<InventarioIngredientes, LocalDate> fechaCaducidadColumn;
     @FXML private TableColumn<InventarioIngredientes, BigDecimal> costoColumn;
     @FXML private TableColumn<InventarioIngredientes, BigDecimal> precioColumn;
+    // Buscador
+    @FXML private ComboBox<String> searchFieldCombo;
+    @FXML private TextField searchTextField;
 
     private final ObservableList<InventarioIngredientes> inventarioIngredientes = FXCollections.observableArrayList();
+    private FilteredList<InventarioIngredientes> filteredInventario;
 
     @FXML private void initialize() {
         loadTiendas();
@@ -48,7 +54,12 @@ public class InventarioIngredientesFormController {
         costoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().costoCompra));
         precioColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().precioVentaPorcion));
 
-        inventarioTable.setItems(inventarioIngredientes);
+        // Tabla con filtrado/ordenado
+        filteredInventario = new FilteredList<>(inventarioIngredientes, it -> true);
+        SortedList<InventarioIngredientes> sorted = new SortedList<>(filteredInventario);
+        sorted.comparatorProperty().bind(inventarioTable.comparatorProperty());
+        inventarioTable.setItems(sorted);
+
         inventarioTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
             if (selected != null) {
                 selectTienda(selected.tienda != null ? selected.tienda.idTienda : null);
@@ -60,8 +71,48 @@ public class InventarioIngredientesFormController {
             }
         });
 
+        // Buscador
+        if (searchFieldCombo != null) {
+            searchFieldCombo.setItems(FXCollections.observableArrayList(
+                    "Todos", "ID", "Tienda", "Ingrediente", "Fecha compra", "Fecha caducidad", "Costo", "Precio"));
+            searchFieldCombo.getSelectionModel().selectFirst();
+            searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
+        }
+        if (searchTextField != null) {
+            searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
+        }
+
         loadInventarioIngredientes();
     }
+
+    private void applyFilter() {
+        if (filteredInventario == null) return;
+        String q = searchTextField != null ? safeLower(searchTextField.getText()) : "";
+        String field = searchFieldCombo != null ? searchFieldCombo.getSelectionModel().getSelectedItem() : "Todos";
+        if (q.isBlank()) { filteredInventario.setPredicate(it -> true); return; }
+        final String selectedField = (field == null) ? "Todos" : field;
+        filteredInventario.setPredicate(it -> {
+            String id = it.idInventarioIngredientes != null ? String.valueOf(it.idInventarioIngredientes).toLowerCase() : "";
+            String tienda = it.tienda != null ? safeLower(it.tienda.direccion) : "";
+            String ing = it.ingrediente != null ? safeLower(it.ingrediente.nombre) : "";
+            String fcompra = it.fechaCompra != null ? safeLower(it.fechaCompra.toString()) : "";
+            String fcad = it.fechaCaducidad != null ? safeLower(it.fechaCaducidad.toString()) : "";
+            String costo = it.costoCompra != null ? it.costoCompra.toPlainString().toLowerCase() : "";
+            String precio = it.precioVentaPorcion != null ? it.precioVentaPorcion.toPlainString().toLowerCase() : "";
+            switch (selectedField) {
+                case "ID": return id.contains(q);
+                case "Tienda": return tienda.contains(q);
+                case "Ingrediente": return ing.contains(q);
+                case "Fecha compra": return fcompra.contains(q);
+                case "Fecha caducidad": return fcad.contains(q);
+                case "Costo": return costo.contains(q);
+                case "Precio": return precio.contains(q);
+                default: return id.contains(q)||tienda.contains(q)||ing.contains(q)||fcompra.contains(q)||fcad.contains(q)||costo.contains(q)||precio.contains(q);
+            }
+        });
+    }
+
+    private String safeLower(String s) { return s == null ? "" : s.toLowerCase().trim(); }
 
     private void loadTiendas() {
         EntityManager em = JPAUtil.em();
@@ -225,6 +276,7 @@ public class InventarioIngredientesFormController {
                             InventarioIngredientes.class)
                     .getResultList();
             inventarioIngredientes.setAll(lista);
+            applyFilter();
         } catch (Exception ex) {
             alert(Alert.AlertType.ERROR, "Error al cargar", ex.getMessage());
             ex.printStackTrace();

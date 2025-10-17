@@ -4,11 +4,14 @@ import jakarta.persistence.EntityManager;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ComboBox;
 import org.cafeteria.cafeteria.config.JPAUtil;
 import org.cafeteria.cafeteria.model.Tienda;
 
@@ -21,8 +24,12 @@ public class TiendaFormController {
     @FXML private TableColumn<Tienda, String> telefonoColumn;
     @FXML private TableColumn<Tienda, String> direccionColumn;
     @FXML private TableColumn<Tienda, String> empleadoColumn;
+    // Buscador
+    @FXML private ComboBox<String> searchFieldCombo;
+    @FXML private TextField searchTextField;
 
     private final ObservableList<Tienda> tiendas = FXCollections.observableArrayList();
+    private FilteredList<Tienda> filteredTiendas;
 
     @FXML
     private void initialize() {
@@ -31,7 +38,11 @@ public class TiendaFormController {
         direccionColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().direccion));
         empleadoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().empleadoResponsable));
 
-        tiendasTable.setItems(tiendas);
+        filteredTiendas = new FilteredList<>(tiendas, it -> true);
+        SortedList<Tienda> sorted = new SortedList<>(filteredTiendas);
+        sorted.comparatorProperty().bind(tiendasTable.comparatorProperty());
+        tiendasTable.setItems(sorted);
+
         tiendasTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
             if (selected != null) {
                 telefonoField.setText(selected.telefono);
@@ -40,8 +51,40 @@ public class TiendaFormController {
             }
         });
 
+        if (searchFieldCombo != null) {
+            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Teléfono", "Dirección", "Empleado"));
+            searchFieldCombo.getSelectionModel().selectFirst();
+            searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
+        }
+        if (searchTextField != null) {
+            searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
+        }
+
         loadTiendas();
     }
+
+    private void applyFilter() {
+        if (filteredTiendas == null) return;
+        String q = searchTextField != null ? safeLower(searchTextField.getText()) : "";
+        String field = searchFieldCombo != null ? searchFieldCombo.getSelectionModel().getSelectedItem() : "Todos";
+        if (q.isBlank()) { filteredTiendas.setPredicate(it -> true); return; }
+        final String selectedField = (field == null) ? "Todos" : field;
+        filteredTiendas.setPredicate(it -> {
+            String id = it.idTienda != null ? String.valueOf(it.idTienda).toLowerCase() : "";
+            String tel = safeLower(it.telefono);
+            String dir = safeLower(it.direccion);
+            String emp = safeLower(it.empleadoResponsable);
+            switch (selectedField) {
+                case "ID": return id.contains(q);
+                case "Teléfono": return tel.contains(q);
+                case "Dirección": return dir.contains(q);
+                case "Empleado": return emp.contains(q);
+                default: return id.contains(q) || tel.contains(q) || dir.contains(q) || emp.contains(q);
+            }
+        });
+    }
+
+    private String safeLower(String s) { return s == null ? "" : s.toLowerCase().trim(); }
 
     @FXML
     private void onSave() {
@@ -172,6 +215,7 @@ public class TiendaFormController {
             var lista = em.createQuery("select t from Tienda t order by t.idTienda", Tienda.class)
                     .getResultList();
             tiendas.setAll(lista);
+            applyFilter();
         } catch (Exception ex) {
             alert(Alert.AlertType.ERROR, "Error al cargar", ex.getMessage());
             ex.printStackTrace();
