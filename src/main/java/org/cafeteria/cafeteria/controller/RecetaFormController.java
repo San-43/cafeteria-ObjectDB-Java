@@ -65,8 +65,6 @@ public class RecetaFormController {
         if (searchTextField != null) {
             searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
         }
-
-        loadRecetas();
     }
 
     private void applyFilter() {

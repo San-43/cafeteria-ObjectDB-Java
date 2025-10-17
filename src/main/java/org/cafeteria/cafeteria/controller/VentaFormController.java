@@ -77,8 +77,6 @@ public class VentaFormController {
         if (searchTextField != null) {
             searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
         }
-
-        loadVentas();
     }
 
     private void loadTiendas() {

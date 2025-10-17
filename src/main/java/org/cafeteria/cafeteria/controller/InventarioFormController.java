@@ -67,8 +67,6 @@ public class InventarioFormController {
         if (searchTextField != null) {
             searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
         }
-
-        loadInventario();
     }
 
     private void applyFilter() {

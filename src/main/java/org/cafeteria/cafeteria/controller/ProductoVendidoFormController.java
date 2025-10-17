@@ -71,8 +71,6 @@ public class ProductoVendidoFormController {
         if (searchTextField != null) {
             searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
         }
-
-        loadVendidos();
     }
 
     private void applyFilter() {

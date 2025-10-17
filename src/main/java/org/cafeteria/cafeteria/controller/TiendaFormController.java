@@ -59,8 +59,6 @@ public class TiendaFormController {
         if (searchTextField != null) {
             searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
         }
-
-        loadTiendas();
     }
 
     private void applyFilter() {

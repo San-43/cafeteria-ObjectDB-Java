@@ -49,6 +49,7 @@
             <padding>
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
+            <Button text="Listar" onAction="#onList"/>
             <Button text="Guardar" onAction="#onSave" defaultButton="true"/>
             <Button text="Actualizar" onAction="#onUpdate"/>
             <Button text="Eliminar" onAction="#onDelete"/>

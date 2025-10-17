@@ -47,8 +47,6 @@ public class ProporcionIngredienteFormController {
                 proporcionField.setText(selected.proporcion);
             }
         });
-
-        loadProporciones();
     }
 
     private void loadRecetas() {

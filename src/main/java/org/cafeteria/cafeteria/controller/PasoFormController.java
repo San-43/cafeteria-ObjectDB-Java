@@ -61,8 +61,6 @@ public class PasoFormController {
         if (searchTextField != null) {
             searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
         }
-
-        loadPasos();
     }
 
     private void applyFilter() {
