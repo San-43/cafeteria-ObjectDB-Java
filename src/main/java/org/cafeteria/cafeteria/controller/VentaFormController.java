@@ -116,6 +116,10 @@ public class VentaFormController {
 
     private String safeLower(String s) { return s == null ? "" : s.toLowerCase().trim(); }
 
+    @FXML private void onList() {
+        loadVentas();
+    }
+
     @FXML private void onSave() {
         Tienda t = tiendaCombo.getValue();
         LocalDate fecha = fechaPicker.getValue();

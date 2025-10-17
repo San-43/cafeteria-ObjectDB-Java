@@ -111,6 +111,11 @@ public class RecetaFormController {
     }
 
     @FXML
+    private void onList() {
+        loadRecetas();
+    }
+
+    @FXML
     private void onSave() {
         Producto prod = productoCombo.getValue();
         if (prod == null) { alert(Alert.AlertType.WARNING, "Campo requerido", "Selecciona un producto."); return; }

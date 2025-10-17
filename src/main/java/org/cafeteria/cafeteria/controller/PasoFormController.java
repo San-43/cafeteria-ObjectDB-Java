@@ -101,6 +101,10 @@ public class PasoFormController {
         } finally { em.close(); }
     }
 
+    @FXML private void onList() {
+        loadPasos();
+    }
+
     @FXML private void onSave() {
         Receta receta = recetaCombo.getValue();
         if (receta == null) { alert(Alert.AlertType.WARNING, "Campo requerido", "Selecciona una receta."); return; }
