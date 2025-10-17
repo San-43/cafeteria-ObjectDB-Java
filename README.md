@@ -65,4 +65,4 @@ The project includes JUnit 5 dependencies, although no automated test suites are
 
 ## License
 
-Add the appropriate license for your project (MIT, Apache 2.0, etc.) if it has not been defined yet.
+Free.
