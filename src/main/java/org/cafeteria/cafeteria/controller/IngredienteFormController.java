@@ -4,12 +4,15 @@ import jakarta.persistence.EntityManager;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ComboBox;
 import org.cafeteria.cafeteria.config.JPAUtil;
 import org.cafeteria.cafeteria.model.Ingrediente;
 
@@ -22,8 +25,12 @@ public class IngredienteFormController {
     @FXML private TableColumn<Ingrediente, String> nombreColumn;
     @FXML private TableColumn<Ingrediente, String> descripcionColumn;
     @FXML private TableColumn<Ingrediente, String> preparacionColumn;
+    // Buscador
+    @FXML private ComboBox<String> searchFieldCombo;
+    @FXML private TextField searchTextField;
 
     private final ObservableList<Ingrediente> ingredientes = FXCollections.observableArrayList();
+    private FilteredList<Ingrediente> filteredIngredientes;
 
     @FXML
     private void initialize() {
@@ -32,7 +39,13 @@ public class IngredienteFormController {
         descripcionColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().descripcion));
         preparacionColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().preparacion));
 
-        ingredientesTable.setItems(ingredientes);
+        // Datos + ordenado/filtrado
+        filteredIngredientes = new FilteredList<>(ingredientes, it -> true);
+        SortedList<Ingrediente> sorted = new SortedList<>(filteredIngredientes);
+        sorted.comparatorProperty().bind(ingredientesTable.comparatorProperty());
+        ingredientesTable.setItems(sorted);
+
+        // Selección para llenar los campos de edición
         ingredientesTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
             if (selected != null) {
                 nombreField.setText(selected.nombre);
@@ -41,6 +54,59 @@ public class IngredienteFormController {
             }
         });
 
+        // Inicializar opciones del buscador
+        if (searchFieldCombo != null) {
+            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Nombre", "Descripción", "Preparación"));
+            searchFieldCombo.getSelectionModel().selectFirst();
+            searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o, a, b) -> applyFilter());
+        }
+        if (searchTextField != null) {
+            searchTextField.textProperty().addListener((o, a, b) -> applyFilter());
+        }
+
+        // Cargar datos al abrir la vista
+        loadIngredientes();
+    }
+
+    private void applyFilter() {
+        if (filteredIngredientes == null) return;
+        String query = searchTextField != null ? safeLower(searchTextField.getText()) : "";
+        String field = searchFieldCombo != null ? searchFieldCombo.getSelectionModel().getSelectedItem() : "Todos";
+        boolean hasQuery = query != null && !query.isBlank();
+        if (!hasQuery) {
+            filteredIngredientes.setPredicate(it -> true);
+            return;
+        }
+        filteredIngredientes.setPredicate(it -> {
+            String idStr = it.idIngrediente != null ? String.valueOf(it.idIngrediente).toLowerCase() : "";
+            String nombre = safeLower(it.nombre);
+            String descripcion = safeLower(it.descripcion);
+            String preparacion = safeLower(it.preparacion);
+
+            switch (field == null ? "Todos" : field) {
+                case "ID":
+                    return idStr.contains(query);
+                case "Nombre":
+                    return nombre.contains(query);
+                case "Descripción":
+                    return descripcion.contains(query);
+                case "Preparación":
+                    return preparacion.contains(query);
+                default: // "Todos"
+                    return idStr.contains(query)
+                            || nombre.contains(query)
+                            || descripcion.contains(query)
+                            || preparacion.contains(query);
+            }
+        });
+    }
+
+    private String safeLower(String s) {
+        return s == null ? "" : s.toLowerCase().trim();
+    }
+
+    @FXML
+    private void onList() {
         loadIngredientes();
     }
 
@@ -159,6 +225,8 @@ public class IngredienteFormController {
             var lista = em.createQuery("select i from Ingrediente i order by i.idIngrediente", Ingrediente.class)
                     .getResultList();
             ingredientes.setAll(lista);
+            // Reaplicar filtro por si hay texto de búsqueda
+            applyFilter();
         } catch (Exception ex) {
             alert(Alert.AlertType.ERROR, "Error al cargar", ex.getMessage());
             ex.printStackTrace();
