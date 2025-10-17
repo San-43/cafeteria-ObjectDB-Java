@@ -2,8 +2,8 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-
-<AnchorPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+<?import javafx.scene.layout.Priority?>
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="org.cafeteria.cafeteria.controller.IngredienteFormController">
     <children>
         <VBox spacing="16.0" styleClass="card" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0"
@@ -43,14 +43,33 @@
                 <Button fx:id="btnEliminar" onAction="#onDelete" text="Eliminar Registro" />
             </HBox>
 
-            <TableView fx:id="ingredientesTable" prefHeight="300">
-                <columns>
-                    <TableColumn fx:id="idColumn" prefWidth="60" text="ID" />
-                    <TableColumn fx:id="nombreColumn" prefWidth="200" text="Nombre" />
-                    <TableColumn fx:id="descripcionColumn" prefWidth="200" text="Descripción" />
-                    <TableColumn fx:id="preparacionColumn" prefWidth="200" text="Preparación" />
-                </columns>
-            </TableView>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Buscar por:"/>
+                    <ComboBox fx:id="searchFieldCombo" prefWidth="160"/>
+                    <TextField fx:id="searchTextField" promptText="Escribe para buscar..." HBox.hgrow="ALWAYS"/>
+                </HBox>
+
+                <TableView fx:id="ingredientesTable" prefHeight="250.0">
+                    <columns>
+                        <TableColumn fx:id="idColumn" text="ID" prefWidth="70.0"/>
+                        <TableColumn fx:id="nombreColumn" text="Nombre" prefWidth="150.0"/>
+                        <TableColumn fx:id="descripcionColumn" text="Descripción" prefWidth="200.0"/>
+                        <TableColumn fx:id="preparacionColumn" text="Preparación" prefWidth="200.0"/>
+                    </columns>
+                </TableView>
+            </children>
         </VBox>
-    </children>
-</AnchorPane>
+    </center>
+    <bottom>
+        <HBox spacing="10" alignment="CENTER_RIGHT">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+            <Button text="Listar" onAction="#onList"/>
+            <Button text="Guardar" onAction="#onSave" defaultButton="true"/>
+            <Button text="Actualizar" onAction="#onUpdate"/>
+            <Button text="Eliminar" onAction="#onDelete"/>
+            <Button text="Limpiar" onAction="#onClear"/>
+        </HBox>
+    </bottom>
+</BorderPane>

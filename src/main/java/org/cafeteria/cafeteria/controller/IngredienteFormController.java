@@ -27,8 +27,8 @@ public class IngredienteFormController {
     @FXML private TableColumn<Ingrediente, String> nombreColumn;
     @FXML private TableColumn<Ingrediente, String> descripcionColumn;
     @FXML private TableColumn<Ingrediente, String> preparacionColumn;
-    @FXML private ComboBox<String> cmbBusqueda;
-    @FXML private TextField txtBusqueda;
+    @FXML private ComboBox<String> searchFieldCombo;
+    @FXML private TextField searchTextField;
 
     private final ObservableList<Ingrediente> ingredientes = FXCollections.observableArrayList();
     private List<Ingrediente> ingredientesCache = new ArrayList<>();
@@ -51,24 +51,24 @@ public class IngredienteFormController {
             }
         });
 
-        if (cmbBusqueda != null) {
-            cmbBusqueda.setItems(FXCollections.observableArrayList("ID", "Nombre", "Descripción", "Preparación"));
-            cmbBusqueda.setPromptText("Elige un campo...");
-            cmbBusqueda.valueProperty().addListener((obs, old, value) -> buscarYActualizarTabla());
+        if (searchFieldCombo != null) {
+            searchFieldCombo.setItems(FXCollections.observableArrayList("ID", "Nombre", "Descripción", "Preparación"));
+            searchFieldCombo.setPromptText("Campo");
+            searchFieldCombo.valueProperty().addListener((obs, old, value) -> buscarYActualizarTabla());
         }
-        if (txtBusqueda != null) {
-            txtBusqueda.textProperty().addListener((obs, old, value) -> buscarYActualizarTabla());
+        if (searchTextField != null) {
+            searchTextField.textProperty().addListener((obs, old, value) -> buscarYActualizarTabla());
         }
     }
 
     @FXML
     private void onList() {
         loadIngredientes();
-        if (cmbBusqueda != null) {
-            cmbBusqueda.getSelectionModel().clearSelection();
+        if (searchFieldCombo != null) {
+            searchFieldCombo.getSelectionModel().clearSelection();
         }
-        if (txtBusqueda != null) {
-            txtBusqueda.clear();
+        if (searchTextField != null) {
+            searchTextField.clear();
         }
         actualizarPlaceholder();
     }
@@ -179,11 +179,11 @@ public class IngredienteFormController {
         descripcionArea.clear();
         preparacionArea.clear();
         ingredientesTable.getSelectionModel().clearSelection();
-        if (cmbBusqueda != null) {
-            cmbBusqueda.getSelectionModel().clearSelection();
+        if (searchFieldCombo != null) {
+            searchFieldCombo.getSelectionModel().clearSelection();
         }
-        if (txtBusqueda != null) {
-            txtBusqueda.clear();
+        if (searchTextField != null) {
+            searchTextField.clear();
         }
         buscarYActualizarTabla();
         nombreField.requestFocus();
@@ -209,8 +209,8 @@ public class IngredienteFormController {
     }
 
     private void buscarYActualizarTabla() {
-        String campo = cmbBusqueda != null ? cmbBusqueda.getValue() : null;
-        String termino = txtBusqueda != null ? txtBusqueda.getText() : null;
+        String campo = searchFieldCombo != null ? searchFieldCombo.getValue() : null;
+        String termino = searchTextField != null ? searchTextField.getText() : null;
 
         if (campo == null || termino == null || termino.isBlank()) {
             if (listaCompletaCargada) {
@@ -269,8 +269,8 @@ public class IngredienteFormController {
             return;
         }
 
-        boolean hayBusquedaActiva = cmbBusqueda != null && cmbBusqueda.getValue() != null
-                && txtBusqueda != null && txtBusqueda.getText() != null && !txtBusqueda.getText().isBlank();
+        boolean hayBusquedaActiva = searchFieldCombo != null && searchFieldCombo.getValue() != null
+                && searchTextField != null && searchTextField.getText() != null && !searchTextField.getText().isBlank();
 
         if (hayBusquedaActiva) {
             ingredientesTable.setPlaceholder(new Label("No se encontró en la base de datos"));
