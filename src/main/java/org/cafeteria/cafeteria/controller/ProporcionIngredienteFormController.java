@@ -36,14 +36,11 @@ public class ProporcionIngredienteFormController {
         loadRecetas();
         loadIngredientes();
 
-        if (searchFieldCombo != null) {
-            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Receta", "Ingrediente", "Proporción"));
-            searchFieldCombo.getSelectionModel().selectFirst();
-            searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
-        }
-        if (searchTextField != null) {
-            searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
-        }
+        // setup search combo
+        searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Receta", "Ingrediente", "Proporción"));
+        searchFieldCombo.getSelectionModel().selectFirst();
+        searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
+        searchTextField.textProperty().addListener((o,a,b) -> applyFilter());
 
         idColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().idProporcion));
         recetaColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
@@ -206,16 +203,10 @@ public class ProporcionIngredienteFormController {
     }
 
     @FXML private void onClearSearch() {
-        if (searchTextField != null) {
-            searchTextField.clear();
-        }
-        if (searchFieldCombo != null) {
-            searchFieldCombo.getSelectionModel().selectFirst();
-        }
+        searchTextField.clear();
+        searchFieldCombo.getSelectionModel().selectFirst();
         applyFilter();
-        if (searchTextField != null) {
-            searchTextField.requestFocus();
-        }
+        searchTextField.requestFocus();
     }
 
     private void applyFilter() {
