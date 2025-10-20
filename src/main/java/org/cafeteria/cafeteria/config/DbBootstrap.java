@@ -137,17 +137,44 @@ public final class DbBootstrap {
                 // Pasos de preparación
                 Paso pasoCafe = new Paso();
                 pasoCafe.receta = recetaCafeAmericano;
-                pasoCafe.pasoDescripcion = "Moler café fresco y preparar en máquina de goteo.";
+                pasoCafe.nombre = "Preparar café americano";
+                pasoCafe.descripcion = "Proceso básico para extraer un café americano equilibrado.";
+                PasoDetalle detalleCafe1 = new PasoDetalle();
+                detalleCafe1.paso = pasoCafe;
+                detalleCafe1.detalle = "Moler café fresco en molienda media y colocar en el portafiltro.";
+                PasoDetalle detalleCafe2 = new PasoDetalle();
+                detalleCafe2.paso = pasoCafe;
+                detalleCafe2.detalle = "Extraer la bebida con agua caliente y servir inmediatamente.";
+                pasoCafe.detalles.add(detalleCafe1);
+                pasoCafe.detalles.add(detalleCafe2);
                 em.persist(pasoCafe);
 
                 Paso pasoCapuchino = new Paso();
                 pasoCapuchino.receta = recetaCapuchino;
-                pasoCapuchino.pasoDescripcion = "Extraer espresso y espumar leche para combinar.";
+                pasoCapuchino.nombre = "Preparar capuchino";
+                pasoCapuchino.descripcion = "Secuencia para elaborar un capuchino con espuma sedosa.";
+                PasoDetalle detalleCapuchino1 = new PasoDetalle();
+                detalleCapuchino1.paso = pasoCapuchino;
+                detalleCapuchino1.detalle = "Extraer un shot doble de espresso.";
+                PasoDetalle detalleCapuchino2 = new PasoDetalle();
+                detalleCapuchino2.paso = pasoCapuchino;
+                detalleCapuchino2.detalle = "Espumar la leche hasta obtener microespuma y combinar con el espresso.";
+                pasoCapuchino.detalles.add(detalleCapuchino1);
+                pasoCapuchino.detalles.add(detalleCapuchino2);
                 em.persist(pasoCapuchino);
 
                 Paso pasoPanini = new Paso();
                 pasoPanini.receta = recetaPanini;
-                pasoPanini.pasoDescripcion = "Armar panini y tostar hasta dorar el pan.";
+                pasoPanini.nombre = "Preparar panini";
+                pasoPanini.descripcion = "Guía para armar y dorar un panini crujiente.";
+                PasoDetalle detallePanini1 = new PasoDetalle();
+                detallePanini1.paso = pasoPanini;
+                detallePanini1.detalle = "Armar el pan con jamón, queso y complementos.";
+                PasoDetalle detallePanini2 = new PasoDetalle();
+                detallePanini2.paso = pasoPanini;
+                detallePanini2.detalle = "Tostar en prensa caliente hasta dorar y derretir el queso.";
+                pasoPanini.detalles.add(detallePanini1);
+                pasoPanini.detalles.add(detallePanini2);
                 em.persist(pasoPanini);
 
                 // Ingredientes

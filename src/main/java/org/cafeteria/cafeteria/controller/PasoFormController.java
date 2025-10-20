@@ -11,16 +11,22 @@ import javafx.scene.control.*;
 import javafx.util.StringConverter;
 import org.cafeteria.cafeteria.config.JPAUtil;
 import org.cafeteria.cafeteria.model.Paso;
+import org.cafeteria.cafeteria.model.PasoDetalle;
 import org.cafeteria.cafeteria.model.Receta;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class PasoFormController {
     @FXML private ComboBox<Receta> recetaCombo;
+    @FXML private TextField nombreField;
     @FXML private TextArea descripcionArea;
+    @FXML private TextArea detalleArea;
+    @FXML private ListView<String> detallesList;
     @FXML private TableView<Paso> pasosTable;
     @FXML private TableColumn<Paso, Long> idColumn;
     @FXML private TableColumn<Paso, String> recetaColumn;
+    @FXML private TableColumn<Paso, String> nombreColumn;
     @FXML private TableColumn<Paso, String> descripcionColumn;
     // Buscador
     @FXML private ComboBox<String> searchFieldCombo;
@@ -28,6 +34,7 @@ public class PasoFormController {
 
     private final ObservableList<Paso> pasos = FXCollections.observableArrayList();
     private FilteredList<Paso> filteredPasos;
+    private final ObservableList<String> detalles = FXCollections.observableArrayList();
 
     @FXML private void initialize() {
         loadRecetas();
@@ -37,7 +44,12 @@ public class PasoFormController {
                 cell.getValue().receta != null && cell.getValue().receta.producto != null
                         ? cell.getValue().receta.producto.descripcion + " (" + cell.getValue().receta.tamano + ")"
                         : ""));
-        descripcionColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().pasoDescripcion));
+        nombreColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().nombre));
+        descripcionColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().descripcion));
+
+        if (detallesList != null) {
+            detallesList.setItems(detalles);
+        }
 
         // Filtrado/ordenado
         filteredPasos = new FilteredList<>(pasos, it -> true);
@@ -48,13 +60,18 @@ public class PasoFormController {
         pasosTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
             if (selected != null) {
                 selectReceta(selected.receta != null ? selected.receta.idReceta : null);
-                descripcionArea.setText(selected.pasoDescripcion);
+                nombreField.setText(selected.nombre);
+                descripcionArea.setText(selected.descripcion);
+                detalles.setAll(selected.detalles == null ? List.of() : selected.detalles.stream()
+                        .map(d -> d.detalle)
+                        .collect(Collectors.toList()));
+                detalleArea.clear();
             }
         });
 
         // Buscador
         if (searchFieldCombo != null) {
-            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Receta", "Descripción"));
+            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Receta", "Nombre", "Descripción", "Detalle"));
             searchFieldCombo.getSelectionModel().selectFirst();
             searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
         }
@@ -72,12 +89,18 @@ public class PasoFormController {
         filteredPasos.setPredicate(it -> {
             String id = it.idPaso != null ? String.valueOf(it.idPaso).toLowerCase() : "";
             String receta = (it.receta!=null && it.receta.producto!=null ? safeLower(it.receta.producto.descripcion + " " + it.receta.tamano) : "");
-            String desc = safeLower(it.pasoDescripcion);
+            String nombre = safeLower(it.nombre);
+            String desc = safeLower(it.descripcion);
+            String detalle = safeLower(it.detalles == null ? "" : it.detalles.stream()
+                    .map(d -> d.detalle == null ? "" : d.detalle)
+                    .collect(Collectors.joining(" ")));
             switch (selectedField) {
                 case "ID": return id.contains(q);
                 case "Receta": return receta.contains(q);
+                case "Nombre": return nombre.contains(q);
                 case "Descripción": return desc.contains(q);
-                default: return id.contains(q) || receta.contains(q) || desc.contains(q);
+                case "Detalle": return detalle.contains(q);
+                default: return id.contains(q) || receta.contains(q) || nombre.contains(q) || desc.contains(q) || detalle.contains(q);
             }
         });
     }
@@ -106,6 +129,8 @@ public class PasoFormController {
     @FXML private void onSave() {
         Receta receta = recetaCombo.getValue();
         if (receta == null) { alert(Alert.AlertType.WARNING, "Campo requerido", "Selecciona una receta."); return; }
+        String nombre = nombreField.getText();
+        if (nombre == null || nombre.isBlank()) { alert(Alert.AlertType.WARNING, "Campo requerido", "El nombre del paso es requerido."); return; }
         String desc = descripcionArea.getText();
         if (desc == null || desc.isBlank()) { alert(Alert.AlertType.WARNING, "Campo requerido", "La descripción del paso es requerida."); return; }
 
@@ -114,7 +139,16 @@ public class PasoFormController {
             em.getTransaction().begin();
             Paso p = new Paso();
             p.receta = em.find(Receta.class, receta.idReceta);
-            p.pasoDescripcion = desc.trim();
+            p.nombre = nombre.trim();
+            p.descripcion = desc.trim();
+            if (!detalles.isEmpty()) {
+                for (String detalle : detalles) {
+                    PasoDetalle pd = new PasoDetalle();
+                    pd.paso = p;
+                    pd.detalle = detalle;
+                    p.detalles.add(pd);
+                }
+            }
             em.persist(p);
             em.getTransaction().commit();
             alert(Alert.AlertType.INFORMATION, "Guardado", "Paso guardado con ID: " + p.idPaso);
@@ -136,6 +170,8 @@ public class PasoFormController {
 
         Receta receta = recetaCombo.getValue();
         if (receta == null) { alert(Alert.AlertType.WARNING, "Campo requerido", "Selecciona una receta."); return; }
+        String nombre = nombreField.getText();
+        if (nombre == null || nombre.isBlank()) { alert(Alert.AlertType.WARNING, "Campo requerido", "El nombre del paso es requerido."); return; }
         String desc = descripcionArea.getText();
         if (desc == null || desc.isBlank()) { alert(Alert.AlertType.WARNING, "Campo requerido", "La descripción del paso es requerida."); return; }
 
@@ -150,7 +186,17 @@ public class PasoFormController {
                 return;
             }
             persistido.receta = em.find(Receta.class, receta.idReceta);
-            persistido.pasoDescripcion = desc.trim();
+            persistido.nombre = nombre.trim();
+            persistido.descripcion = desc.trim();
+            persistido.detalles.clear();
+            if (!detalles.isEmpty()) {
+                for (String detalle : detalles) {
+                    PasoDetalle pd = new PasoDetalle();
+                    pd.paso = persistido;
+                    pd.detalle = detalle;
+                    persistido.detalles.add(pd);
+                }
+            }
             em.getTransaction().commit();
             alert(Alert.AlertType.INFORMATION, "Actualizado", "Paso actualizado correctamente.");
             loadPasos();
@@ -193,7 +239,10 @@ public class PasoFormController {
 
     @FXML private void onClear() {
         recetaCombo.getSelectionModel().clearSelection();
+        nombreField.clear();
         descripcionArea.clear();
+        detalleArea.clear();
+        detalles.clear();
         pasosTable.getSelectionModel().clearSelection();
         recetaCombo.requestFocus();
     }
@@ -208,7 +257,11 @@ public class PasoFormController {
     private void loadPasos() {
         EntityManager em = JPAUtil.em();
         try {
-            List<Paso> lista = em.createQuery("select p from Paso p order by p.idPaso", Paso.class).getResultList();
+            List<Paso> lista = em.createQuery("select distinct p from Paso p left join fetch p.detalles", Paso.class).getResultList();
+            lista.sort((a,b) -> {
+                if (a.idPaso == null || b.idPaso == null) return 0;
+                return a.idPaso.compareTo(b.idPaso);
+            });
             pasos.setAll(lista);
             applyFilter();
         } catch (Exception ex) {
@@ -226,5 +279,26 @@ public class PasoFormController {
                 .filter(r -> r.idReceta != null && r.idReceta.equals(id))
                 .findFirst()
                 .ifPresent(recetaCombo.getSelectionModel()::select);
+    }
+
+    @FXML private void onAddDetalle() {
+        if (detalleArea == null) return;
+        String detalle = detalleArea.getText();
+        if (detalle == null || detalle.isBlank()) {
+            alert(Alert.AlertType.WARNING, "Campo requerido", "Captura el detalle del paso antes de agregarlo.");
+            return;
+        }
+        detalles.add(detalle.trim());
+        detalleArea.clear();
+    }
+
+    @FXML private void onRemoveDetalle() {
+        if (detallesList == null) return;
+        String seleccionado = detallesList.getSelectionModel().getSelectedItem();
+        if (seleccionado == null) {
+            alert(Alert.AlertType.WARNING, "Seleccione un detalle", "Selecciona un detalle para eliminar.");
+            return;
+        }
+        detalles.remove(seleccionado);
     }
 }
