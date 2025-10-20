@@ -1,6 +1,7 @@
 package org.cafeteria.cafeteria.controller;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -23,12 +24,20 @@ public class ProporcionIngredienteFormController {
     @FXML private TableColumn<ProporcionIngrediente, String> recetaColumn;
     @FXML private TableColumn<ProporcionIngrediente, String> ingredienteColumn;
     @FXML private TableColumn<ProporcionIngrediente, String> proporcionColumn;
+    @FXML private ComboBox<String> searchFieldCombo;
+    @FXML private TextField searchTextField;
 
     private final ObservableList<ProporcionIngrediente> proporciones = FXCollections.observableArrayList();
 
     @FXML private void initialize() {
         loadRecetas();
         loadIngredientes();
+
+        // setup search combo
+        searchFieldCombo.setItems(FXCollections.observableArrayList("ID", "Receta", "Ingrediente", "Proporción"));
+        searchFieldCombo.getSelectionModel().selectFirst();
+        // trigger search on Enter
+        searchTextField.setOnAction(e -> onSearch());
 
         idColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().idProporcion));
         recetaColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
@@ -47,6 +56,9 @@ public class ProporcionIngredienteFormController {
                 proporcionField.setText(selected.proporcion);
             }
         });
+
+        // initial load
+        loadProporciones();
     }
 
     private void loadRecetas() {
@@ -178,6 +190,68 @@ public class ProporcionIngredienteFormController {
         proporcionField.clear();
         proporcionesTable.getSelectionModel().clearSelection();
         recetaCombo.requestFocus();
+    }
+
+    @FXML private void onSearch() {
+        String field = searchFieldCombo.getValue();
+        String text = searchTextField.getText();
+        if (text == null || text.isBlank()) {
+            alert(Alert.AlertType.WARNING, "Buscar", "Escribe texto para buscar o pulsa Limpiar.");
+            return;
+        }
+        EntityManager em = JPAUtil.em();
+        try {
+            TypedQuery<ProporcionIngrediente> query;
+            switch (field) {
+                case "ID":
+                    try {
+                        Long id = Long.parseLong(text.trim());
+                        query = em.createQuery("select p from ProporcionIngrediente p where p.idProporcion = :id", ProporcionIngrediente.class);
+                        query.setParameter("id", id);
+                    } catch (NumberFormatException nfe) {
+                        alert(Alert.AlertType.WARNING, "Buscar por ID", "ID inválido.");
+                        return;
+                    }
+                    break;
+                case "Receta":
+                    String tRec = "%" + text.trim().toLowerCase() + "%";
+                    query = em.createQuery(
+                            "select p from ProporcionIngrediente p join p.receta r join r.producto prod " +
+                                    "where lower(prod.descripcion) like :t or lower(r.tamano) like :t",
+                            ProporcionIngrediente.class);
+                    query.setParameter("t", tRec);
+                    break;
+                case "Ingrediente":
+                    String tIng = "%" + text.trim().toLowerCase() + "%";
+                    query = em.createQuery(
+                            "select p from ProporcionIngrediente p join p.ingrediente i where lower(i.nombre) like :t",
+                            ProporcionIngrediente.class);
+                    query.setParameter("t", tIng);
+                    break;
+                case "Proporción":
+                    String tProp = "%" + text.trim().toLowerCase() + "%";
+                    query = em.createQuery(
+                            "select p from ProporcionIngrediente p where lower(p.proporcion) like :t",
+                            ProporcionIngrediente.class);
+                    query.setParameter("t", tProp);
+                    break;
+                default:
+                    loadProporciones();
+                    return;
+            }
+            List<ProporcionIngrediente> lista = query.getResultList();
+            proporciones.setAll(lista);
+        } catch (Exception ex) {
+            alert(Alert.AlertType.ERROR, "Error al buscar", ex.getMessage());
+            ex.printStackTrace();
+        } finally { em.close(); }
+    }
+
+    @FXML private void onClearSearch() {
+        searchTextField.clear();
+        searchFieldCombo.getSelectionModel().selectFirst();
+        loadProporciones();
+        searchTextField.requestFocus();
     }
 
     private void alert(Alert.AlertType type, String header, String content) {
