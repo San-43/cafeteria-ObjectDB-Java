@@ -44,7 +44,7 @@
 
                 <TableView fx:id="inventarioTable" prefHeight="250.0">
                     <columns>
-                        <TableColumn fx:id="idColumn" text="ID" prefWidth="70.0"/>
+                        <TableColumn fx:id="idColumn" text="ID" prefWidth="150.0"/>
                         <TableColumn fx:id="tiendaColumn" text="Tienda" prefWidth="180.0"/>
                         <TableColumn fx:id="ingredienteColumn" text="Ingrediente" prefWidth="180.0"/>
                         <TableColumn fx:id="fechaCompraColumn" text="Fecha compra" prefWidth="140.0"/>

@@ -8,8 +8,9 @@ import java.math.BigDecimal;
         uniqueConstraints = @UniqueConstraint(name="uk_venta_producto",
                 columnNames = {"id_venta","id_producto"}))
 public class ProductoVendido {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    public Long idProductoVendido;
+    @Id
+    @Column(name = "id_producto_vendido", length = 36)
+    public String idProductoVendido;
 
     @ManyToOne(optional = false) @JoinColumn(name = "id_venta", nullable = false)
     public Venta venta;
@@ -18,7 +19,16 @@ public class ProductoVendido {
     public Producto producto;
 
     public Integer cantidad;
+
+    @Column(precision = 12, scale = 2)
     public BigDecimal precio;
+
+    @PrePersist
+    public void prePersist() {
+        if (idProductoVendido == null || idProductoVendido.isBlank()) {
+            idProductoVendido = java.util.UUID.randomUUID().toString();
+        }
+    }
 
     public ProductoVendido() {}
 }

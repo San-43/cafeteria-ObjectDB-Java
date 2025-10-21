@@ -18,11 +18,13 @@ import java.util.List;
 
 public class RecetaFormController {
     @FXML private ComboBox<Producto> productoCombo;
+    @FXML private TextField nombreField;
     @FXML private TextField tamanoField;
     @FXML private TextField costoPrepField;
     @FXML private TableView<Receta> recetasTable;
-    @FXML private TableColumn<Receta, Long> idColumn;
+    @FXML private TableColumn<Receta, String> idColumn;
     @FXML private TableColumn<Receta, String> productoColumn;
+    @FXML private TableColumn<Receta, String> nombreColumn;
     @FXML private TableColumn<Receta, String> tamanoColumn;
     @FXML private TableColumn<Receta, BigDecimal> costoColumn;
     // Buscador
@@ -38,7 +40,8 @@ public class RecetaFormController {
 
         idColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().idReceta));
         productoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
-                cell.getValue().producto != null ? cell.getValue().producto.descripcion : ""));
+                cell.getValue().producto != null ? buildProductoLabel(cell.getValue().producto) : ""));
+        nombreColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().nombre));
         tamanoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().tamano));
         costoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().costoPreparacion));
 
@@ -51,6 +54,7 @@ public class RecetaFormController {
         recetasTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
             if (selected != null) {
                 selectProducto(selected.producto != null ? selected.producto.idProducto : null);
+                nombreField.setText(selected.nombre);
                 tamanoField.setText(selected.tamano);
                 costoPrepField.setText(selected.costoPreparacion != null ? selected.costoPreparacion.toPlainString() : "");
             }
@@ -58,7 +62,7 @@ public class RecetaFormController {
 
         // Buscador
         if (searchFieldCombo != null) {
-            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Producto", "Tamaño", "Costo"));
+            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Producto", "Nombre", "Tamaño", "Costo"));
             searchFieldCombo.getSelectionModel().selectFirst();
             searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
         }
@@ -74,16 +78,18 @@ public class RecetaFormController {
         if (q.isBlank()) { filteredRecetas.setPredicate(it -> true); return; }
         final String selectedField = (field == null) ? "Todos" : field;
         filteredRecetas.setPredicate(it -> {
-            String id = it.idReceta != null ? String.valueOf(it.idReceta).toLowerCase() : "";
-            String prod = it.producto != null ? safeLower(it.producto.descripcion) : "";
+            String id = it.idReceta != null ? it.idReceta.toLowerCase() : "";
+            String prod = it.producto != null ? safeLower(buildProductoLabel(it.producto)) : "";
+            String nombre = safeLower(it.nombre);
             String tam = safeLower(it.tamano);
             String costo = it.costoPreparacion != null ? it.costoPreparacion.toPlainString().toLowerCase() : "";
             switch (selectedField) {
                 case "ID": return id.contains(q);
                 case "Producto": return prod.contains(q);
+                case "Nombre": return nombre.contains(q);
                 case "Tamaño": return tam.contains(q);
                 case "Costo": return costo.contains(q);
-                default: return id.contains(q) || prod.contains(q) || tam.contains(q) || costo.contains(q);
+                default: return id.contains(q) || prod.contains(q) || nombre.contains(q) || tam.contains(q) || costo.contains(q);
             }
         });
     }
@@ -93,17 +99,17 @@ public class RecetaFormController {
     private void loadProductos() {
         EntityManager em = JPAUtil.em();
         try {
-            List<Producto> productos = em.createQuery("select p from Producto p order by p.descripcion", Producto.class).getResultList();
+            List<Producto> productos = em.createQuery("select p from Producto p order by p.nombre", Producto.class).getResultList();
             productoCombo.setItems(FXCollections.observableArrayList(productos));
             productoCombo.setConverter(new StringConverter<>() {
-                @Override public String toString(Producto p) { return p == null ? "" : p.descripcion; }
+                @Override public String toString(Producto p) { return p == null ? "" : buildProductoLabel(p); }
                 @Override public Producto fromString(String s) { return null; }
             });
             productoCombo.setButtonCell(new ListCell<>() {
-                @Override protected void updateItem(Producto item, boolean empty) { super.updateItem(item, empty); setText(empty || item==null ? "" : item.descripcion); }
+                @Override protected void updateItem(Producto item, boolean empty) { super.updateItem(item, empty); setText(empty || item==null ? "" : buildProductoLabel(item)); }
             });
             productoCombo.setCellFactory(cb -> new ListCell<>() {
-                @Override protected void updateItem(Producto item, boolean empty) { super.updateItem(item, empty); setText(empty || item==null ? "" : item.descripcion); }
+                @Override protected void updateItem(Producto item, boolean empty) { super.updateItem(item, empty); setText(empty || item==null ? "" : buildProductoLabel(item)); }
             });
         } finally { em.close(); }
     }
@@ -117,6 +123,8 @@ public class RecetaFormController {
     private void onSave() {
         Producto prod = productoCombo.getValue();
         if (prod == null) { alert(Alert.AlertType.WARNING, "Campo requerido", "Selecciona un producto."); return; }
+        String nombre = nombreField.getText();
+        if (nombre == null || nombre.isBlank()) { alert(Alert.AlertType.WARNING, "Campo requerido", "El nombre es requerido."); return; }
         String tam = tamanoField.getText();
         if (tam == null || tam.isBlank()) { alert(Alert.AlertType.WARNING, "Campo requerido", "El tamaño es requerido."); return; }
         BigDecimal costo = parseBigDecimal(costoPrepField.getText(), "costo de preparación");
@@ -127,6 +135,7 @@ public class RecetaFormController {
             em.getTransaction().begin();
             Receta r = new Receta();
             r.producto = em.find(Producto.class, prod.idProducto); // aseguramos entidad gestionada
+            r.nombre = nombre.trim();
             r.tamano = tam.trim();
             r.costoPreparacion = costo;
             em.persist(r);
@@ -151,6 +160,8 @@ public class RecetaFormController {
 
         Producto prod = productoCombo.getValue();
         if (prod == null) { alert(Alert.AlertType.WARNING, "Campo requerido", "Selecciona un producto."); return; }
+        String nombre = nombreField.getText();
+        if (nombre == null || nombre.isBlank()) { alert(Alert.AlertType.WARNING, "Campo requerido", "El nombre es requerido."); return; }
         String tam = tamanoField.getText();
         if (tam == null || tam.isBlank()) { alert(Alert.AlertType.WARNING, "Campo requerido", "El tamaño es requerido."); return; }
         BigDecimal costo = parseBigDecimal(costoPrepField.getText(), "costo de preparación");
@@ -167,6 +178,7 @@ public class RecetaFormController {
                 return;
             }
             persistida.producto = em.find(Producto.class, prod.idProducto);
+            persistida.nombre = nombre.trim();
             persistida.tamano = tam.trim();
             persistida.costoPreparacion = costo;
             em.getTransaction().commit();
@@ -213,6 +225,7 @@ public class RecetaFormController {
     @FXML
     private void onClear() {
         productoCombo.getSelectionModel().clearSelection();
+        nombreField.clear();
         tamanoField.clear();
         costoPrepField.clear();
         recetasTable.getSelectionModel().clearSelection();
@@ -239,7 +252,7 @@ public class RecetaFormController {
     private void loadRecetas() {
         EntityManager em = JPAUtil.em();
         try {
-            List<Receta> lista = em.createQuery("select r from Receta r order by r.idReceta", Receta.class)
+            List<Receta> lista = em.createQuery("select r from Receta r order by r.nombre", Receta.class)
                     .getResultList();
             recetas.setAll(lista);
             applyFilter();
@@ -249,7 +262,7 @@ public class RecetaFormController {
         } finally { em.close(); }
     }
 
-    private void selectProducto(Long id) {
+    private void selectProducto(String id) {
         if (id == null) {
             productoCombo.getSelectionModel().clearSelection();
             return;
@@ -258,5 +271,15 @@ public class RecetaFormController {
                 .filter(prod -> prod.idProducto != null && prod.idProducto.equals(id))
                 .findFirst()
                 .ifPresent(productoCombo.getSelectionModel()::select);
+    }
+
+    private String buildProductoLabel(Producto producto) {
+        if (producto == null) return "";
+        String nombre = producto.nombre != null ? producto.nombre : "";
+        String descripcion = producto.descripcion != null ? producto.descripcion : "";
+        if (!nombre.isBlank() && !descripcion.isBlank()) {
+            return nombre + " — " + descripcion;
+        }
+        return !nombre.isBlank() ? nombre : descripcion;
     }
 }

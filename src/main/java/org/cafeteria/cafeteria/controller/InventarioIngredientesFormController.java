@@ -26,7 +26,7 @@ public class InventarioIngredientesFormController {
     @FXML private TextField costoCompraField;
     @FXML private TextField precioPorcionField;
     @FXML private TableView<InventarioIngredientes> inventarioTable;
-    @FXML private TableColumn<InventarioIngredientes, Long> idColumn;
+    @FXML private TableColumn<InventarioIngredientes, String> idColumn;
     @FXML private TableColumn<InventarioIngredientes, String> tiendaColumn;
     @FXML private TableColumn<InventarioIngredientes, String> ingredienteColumn;
     @FXML private TableColumn<InventarioIngredientes, LocalDate> fechaCompraColumn;
@@ -90,7 +90,7 @@ public class InventarioIngredientesFormController {
         if (q.isBlank()) { filteredInventario.setPredicate(it -> true); return; }
         final String selectedField = (field == null) ? "Todos" : field;
         filteredInventario.setPredicate(it -> {
-            String id = it.idInventarioIngredientes != null ? String.valueOf(it.idInventarioIngredientes).toLowerCase() : "";
+            String id = it.idInventarioIngredientes != null ? it.idInventarioIngredientes.toLowerCase() : "";
             String tienda = it.tienda != null ? safeLower(it.tienda.direccion) : "";
             String ing = it.ingrediente != null ? safeLower(it.ingrediente.nombre) : "";
             String fcompra = it.fechaCompra != null ? safeLower(it.fechaCompra.toString()) : "";
@@ -274,7 +274,7 @@ public class InventarioIngredientesFormController {
         EntityManager em = JPAUtil.em();
         try {
             List<InventarioIngredientes> lista = em.createQuery(
-                            "select i from InventarioIngredientes i order by i.idInventarioIngredientes",
+                            "select i from InventarioIngredientes i order by i.fechaCompra",
                             InventarioIngredientes.class)
                     .getResultList();
             inventarioIngredientes.setAll(lista);
@@ -287,7 +287,7 @@ public class InventarioIngredientesFormController {
         }
     }
 
-    private void selectTienda(Long id) {
+    private void selectTienda(String id) {
         if (id == null) {
             tiendaCombo.getSelectionModel().clearSelection();
             return;
@@ -298,7 +298,7 @@ public class InventarioIngredientesFormController {
                 .ifPresent(tiendaCombo.getSelectionModel()::select);
     }
 
-    private void selectIngrediente(Long id) {
+    private void selectIngrediente(String id) {
         if (id == null) {
             ingredienteCombo.getSelectionModel().clearSelection();
             return;

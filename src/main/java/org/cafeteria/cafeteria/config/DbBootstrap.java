@@ -3,7 +3,6 @@ import org.cafeteria.cafeteria.model.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 public final class DbBootstrap {
     public static void init() {
@@ -13,7 +12,7 @@ public final class DbBootstrap {
 
             // Crear tienda por defecto si no hay ninguna
             long tiendas = em.createQuery("select count(t) from Tienda t", Long.class).getSingleResult();
-            if (tiendas == 1) {
+            if (tiendas == 0) {
                 // Tiendas
                 Tienda tiendaCentro = new Tienda();
                 tiendaCentro.telefono = "771-000-0000";
@@ -35,19 +34,22 @@ public final class DbBootstrap {
 
                 // Productos
                 Producto cafeAmericano = new Producto();
-                cafeAmericano.descripcion = "Café americano";
+                cafeAmericano.nombre = "Café americano";
+                cafeAmericano.descripcion = "Taza de café filtrado";
                 cafeAmericano.costo = new BigDecimal("20.00");
                 cafeAmericano.precioVenta = new BigDecimal("35.00");
                 em.persist(cafeAmericano);
 
                 Producto capuchino = new Producto();
-                capuchino.descripcion = "Capuchino";
+                capuchino.nombre = "Capuchino";
+                capuchino.descripcion = "Espresso con leche espumada";
                 capuchino.costo = new BigDecimal("22.00");
                 capuchino.precioVenta = new BigDecimal("38.00");
                 em.persist(capuchino);
 
                 Producto panini = new Producto();
-                panini.descripcion = "Panini de jamón";
+                panini.nombre = "Panini de jamón";
+                panini.descripcion = "Panini caliente de jamón y queso";
                 panini.costo = new BigDecimal("30.00");
                 panini.precioVenta = new BigDecimal("55.00");
                 em.persist(panini);
@@ -56,38 +58,47 @@ public final class DbBootstrap {
                 Inventario inventarioCentro = new Inventario();
                 inventarioCentro.tienda = tiendaCentro;
                 inventarioCentro.producto = cafeAmericano;
-                inventarioCentro.stock = 50;
+                inventarioCentro.fechaIngreso = LocalDate.now().minusDays(10);
+                inventarioCentro.fechaConsumo = LocalDate.now().plusWeeks(2);
+                inventarioCentro.stock = 50L;
                 em.persist(inventarioCentro);
 
                 Inventario inventarioSur = new Inventario();
                 inventarioSur.tienda = tiendaSur;
                 inventarioSur.producto = capuchino;
-                inventarioSur.stock = 35;
+                inventarioSur.fechaIngreso = LocalDate.now().minusDays(5);
+                inventarioSur.fechaConsumo = LocalDate.now().plusWeeks(1);
+                inventarioSur.stock = 35L;
                 em.persist(inventarioSur);
 
                 Inventario inventarioNorte = new Inventario();
                 inventarioNorte.tienda = tiendaNorte;
                 inventarioNorte.producto = panini;
-                inventarioNorte.stock = 20;
+                inventarioNorte.fechaIngreso = LocalDate.now().minusDays(3);
+                inventarioNorte.fechaConsumo = LocalDate.now().plusWeeks(3);
+                inventarioNorte.stock = 20L;
                 em.persist(inventarioNorte);
 
                 // Ventas
                 Venta ventaCentro = new Venta();
                 ventaCentro.tienda = tiendaCentro;
-                ventaCentro.fecha = LocalDateTime.now().minusDays(2);
-                ventaCentro.total = BigDecimal.ZERO;
+                ventaCentro.producto = cafeAmericano;
+                ventaCentro.fecha = LocalDate.now().minusDays(2);
+                ventaCentro.total = cafeAmericano.precioVenta.multiply(BigDecimal.valueOf(2));
                 em.persist(ventaCentro);
 
                 Venta ventaSur = new Venta();
                 ventaSur.tienda = tiendaSur;
-                ventaSur.fecha = LocalDateTime.now().minusDays(1);
-                ventaSur.total = BigDecimal.ZERO;
+                ventaSur.producto = capuchino;
+                ventaSur.fecha = LocalDate.now().minusDays(1);
+                ventaSur.total = capuchino.precioVenta.multiply(BigDecimal.valueOf(3));
                 em.persist(ventaSur);
 
                 Venta ventaNorte = new Venta();
                 ventaNorte.tienda = tiendaNorte;
-                ventaNorte.fecha = LocalDateTime.now();
-                ventaNorte.total = BigDecimal.ZERO;
+                ventaNorte.producto = panini;
+                ventaNorte.fecha = LocalDate.now();
+                ventaNorte.total = panini.precioVenta;
                 em.persist(ventaNorte);
 
                 // Productos vendidos
@@ -97,7 +108,6 @@ public final class DbBootstrap {
                 ventaCafeAmericano.cantidad = 2;
                 ventaCafeAmericano.precio = cafeAmericano.precioVenta;
                 em.persist(ventaCafeAmericano);
-                ventaCentro.total = ventaCafeAmericano.precio.multiply(BigDecimal.valueOf(ventaCafeAmericano.cantidad));
 
                 ProductoVendido ventaCapuchino = new ProductoVendido();
                 ventaCapuchino.venta = ventaSur;
@@ -105,7 +115,6 @@ public final class DbBootstrap {
                 ventaCapuchino.cantidad = 3;
                 ventaCapuchino.precio = capuchino.precioVenta;
                 em.persist(ventaCapuchino);
-                ventaSur.total = ventaCapuchino.precio.multiply(BigDecimal.valueOf(ventaCapuchino.cantidad));
 
                 ProductoVendido ventaPanini = new ProductoVendido();
                 ventaPanini.venta = ventaNorte;
@@ -113,23 +122,25 @@ public final class DbBootstrap {
                 ventaPanini.cantidad = 1;
                 ventaPanini.precio = panini.precioVenta;
                 em.persist(ventaPanini);
-                ventaNorte.total = ventaPanini.precio.multiply(BigDecimal.valueOf(ventaPanini.cantidad));
 
                 // Recetas
                 Receta recetaCafeAmericano = new Receta();
                 recetaCafeAmericano.producto = cafeAmericano;
+                recetaCafeAmericano.nombre = "Café americano clásico";
                 recetaCafeAmericano.tamano = "mediano";
                 recetaCafeAmericano.costoPreparacion = new BigDecimal("8.00");
                 em.persist(recetaCafeAmericano);
 
                 Receta recetaCapuchino = new Receta();
                 recetaCapuchino.producto = capuchino;
+                recetaCapuchino.nombre = "Capuchino artesanal";
                 recetaCapuchino.tamano = "grande";
                 recetaCapuchino.costoPreparacion = new BigDecimal("10.00");
                 em.persist(recetaCapuchino);
 
                 Receta recetaPanini = new Receta();
                 recetaPanini.producto = panini;
+                recetaPanini.nombre = "Panini tradicional";
                 recetaPanini.tamano = "único";
                 recetaPanini.costoPreparacion = new BigDecimal("18.00");
                 em.persist(recetaPanini);
@@ -137,42 +148,39 @@ public final class DbBootstrap {
                 // Pasos de preparación
                 Paso pasoCafe = new Paso();
                 pasoCafe.receta = recetaCafeAmericano;
-                pasoCafe.nombre = "Preparar café americano";
-                pasoCafe.descripcion = "Proceso básico para extraer un café americano equilibrado.";
+                pasoCafe.numeroPaso = 1L;
                 PasoDetalle detalleCafe1 = new PasoDetalle();
                 detalleCafe1.paso = pasoCafe;
-                detalleCafe1.detalle = "Moler café fresco en molienda media y colocar en el portafiltro.";
+                detalleCafe1.pasoDetalle = "Moler café fresco en molienda media y colocar en el portafiltro.";
                 PasoDetalle detalleCafe2 = new PasoDetalle();
                 detalleCafe2.paso = pasoCafe;
-                detalleCafe2.detalle = "Extraer la bebida con agua caliente y servir inmediatamente.";
+                detalleCafe2.pasoDetalle = "Extraer la bebida con agua caliente y servir inmediatamente.";
                 pasoCafe.detalles.add(detalleCafe1);
                 pasoCafe.detalles.add(detalleCafe2);
                 em.persist(pasoCafe);
 
                 Paso pasoCapuchino = new Paso();
                 pasoCapuchino.receta = recetaCapuchino;
-                pasoCapuchino.nombre = "Preparar capuchino";
-                pasoCapuchino.descripcion = "Secuencia para elaborar un capuchino con espuma sedosa.";
+                pasoCapuchino.numeroPaso = 1L;
                 PasoDetalle detalleCapuchino1 = new PasoDetalle();
                 detalleCapuchino1.paso = pasoCapuchino;
-                detalleCapuchino1.detalle = "Extraer un shot doble de espresso.";
+                detalleCapuchino1.pasoDetalle = "Extraer un shot doble de espresso.";
                 PasoDetalle detalleCapuchino2 = new PasoDetalle();
                 detalleCapuchino2.paso = pasoCapuchino;
-                detalleCapuchino2.detalle = "Espumar la leche hasta obtener microespuma y combinar con el espresso.";
+                detalleCapuchino2.pasoDetalle = "Espumar la leche hasta obtener microespuma y combinar con el espresso.";
                 pasoCapuchino.detalles.add(detalleCapuchino1);
                 pasoCapuchino.detalles.add(detalleCapuchino2);
                 em.persist(pasoCapuchino);
 
                 Paso pasoPanini = new Paso();
                 pasoPanini.receta = recetaPanini;
-                pasoPanini.nombre = "Preparar panini";
-                pasoPanini.descripcion = "Guía para armar y dorar un panini crujiente.";
+                pasoPanini.numeroPaso = 1L;
                 PasoDetalle detallePanini1 = new PasoDetalle();
                 detallePanini1.paso = pasoPanini;
-                detallePanini1.detalle = "Armar el pan con jamón, queso y complementos.";
+                detallePanini1.pasoDetalle = "Armar el pan con jamón, queso y complementos.";
                 PasoDetalle detallePanini2 = new PasoDetalle();
                 detallePanini2.paso = pasoPanini;
-                detallePanini2.detalle = "Tostar en prensa caliente hasta dorar y derretir el queso.";
+                detallePanini2.pasoDetalle = "Tostar en prensa caliente hasta dorar y derretir el queso.";
                 pasoPanini.detalles.add(detallePanini1);
                 pasoPanini.detalles.add(detallePanini2);
                 em.persist(pasoPanini);
@@ -181,38 +189,35 @@ public final class DbBootstrap {
                 Ingrediente cafeMolido = new Ingrediente();
                 cafeMolido.nombre = "Café molido";
                 cafeMolido.descripcion = "Granos arábica recién molidos.";
-                cafeMolido.preparacion = "Molienda media";
                 em.persist(cafeMolido);
 
                 Ingrediente leche = new Ingrediente();
                 leche.nombre = "Leche entera";
                 leche.descripcion = "Leche pasteurizada para bebidas calientes.";
-                leche.preparacion = "Espumar antes de servir.";
                 em.persist(leche);
 
                 Ingrediente jamon = new Ingrediente();
                 jamon.nombre = "Jamón de pavo";
                 jamon.descripcion = "Rebanadas delgadas para sándwiches.";
-                jamon.preparacion = "Mantener refrigerado";
                 em.persist(jamon);
 
                 // Proporciones de ingredientes
                 ProporcionIngrediente proporcionCafe = new ProporcionIngrediente();
                 proporcionCafe.receta = recetaCafeAmericano;
                 proporcionCafe.ingrediente = cafeMolido;
-                proporcionCafe.proporcion = "12 g";
+                proporcionCafe.proporcion = 12.0;
                 em.persist(proporcionCafe);
 
                 ProporcionIngrediente proporcionCapuchino = new ProporcionIngrediente();
                 proporcionCapuchino.receta = recetaCapuchino;
                 proporcionCapuchino.ingrediente = leche;
-                proporcionCapuchino.proporcion = "150 ml";
+                proporcionCapuchino.proporcion = 150.0;
                 em.persist(proporcionCapuchino);
 
                 ProporcionIngrediente proporcionPanini = new ProporcionIngrediente();
                 proporcionPanini.receta = recetaPanini;
                 proporcionPanini.ingrediente = jamon;
-                proporcionPanini.proporcion = "2 rebanadas";
+                proporcionPanini.proporcion = 2.0;
                 em.persist(proporcionPanini);
 
                 // Inventario de ingredientes

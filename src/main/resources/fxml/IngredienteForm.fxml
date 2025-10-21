@@ -22,8 +22,6 @@
                         <Label text="Descripción:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
                         <TextArea fx:id="descripcionArea" GridPane.rowIndex="1" GridPane.columnIndex="1" prefRowCount="3"/>
 
-                        <Label text="Preparación:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                        <TextArea fx:id="preparacionArea" GridPane.rowIndex="2" GridPane.columnIndex="1" prefRowCount="3"/>
                     </children>
                 </GridPane>
 
@@ -35,10 +33,9 @@
 
                 <TableView fx:id="ingredientesTable" prefHeight="250.0">
                     <columns>
-                        <TableColumn fx:id="idColumn" text="ID" prefWidth="70.0"/>
-                        <TableColumn fx:id="nombreColumn" text="Nombre" prefWidth="150.0"/>
-                        <TableColumn fx:id="descripcionColumn" text="Descripción" prefWidth="200.0"/>
-                        <TableColumn fx:id="preparacionColumn" text="Preparación" prefWidth="200.0"/>
+                        <TableColumn fx:id="idColumn" text="ID" prefWidth="150.0"/>
+                        <TableColumn fx:id="nombreColumn" text="Nombre" prefWidth="180.0"/>
+                        <TableColumn fx:id="descripcionColumn" text="Descripción" prefWidth="260.0"/>
                     </columns>
                 </TableView>
             </children>

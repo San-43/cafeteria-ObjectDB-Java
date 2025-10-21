@@ -16,14 +16,17 @@
                         <ColumnConstraints percentWidth="70"/>
                     </columnConstraints>
                     <children>
-                        <Label text="Descripción:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                        <TextField fx:id="descripcionField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                        <Label text="Nombre:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                        <TextField fx:id="nombreField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-                        <Label text="Costo:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                        <TextField fx:id="costoField" promptText="0.00" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                        <Label text="Descripción:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <TextField fx:id="descripcionField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
-                        <Label text="Precio de venta:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                        <TextField fx:id="precioVentaField" promptText="0.00" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                        <Label text="Costo:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                        <TextField fx:id="costoField" promptText="0.00" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                        <Label text="Precio de venta:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                        <TextField fx:id="precioVentaField" promptText="0.00" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
                     </children>
                 </GridPane>
 
@@ -35,8 +38,9 @@
 
                 <TableView fx:id="productosTable" prefHeight="250.0">
                     <columns>
-                        <TableColumn fx:id="idColumn" text="ID" prefWidth="70.0"/>
-                        <TableColumn fx:id="descripcionColumn" text="Descripción" prefWidth="200.0"/>
+                        <TableColumn fx:id="idColumn" text="ID" prefWidth="150.0"/>
+                        <TableColumn fx:id="nombreColumn" text="Nombre" prefWidth="180.0"/>
+                        <TableColumn fx:id="descripcionColumn" text="Descripción" prefWidth="220.0"/>
                         <TableColumn fx:id="costoColumn" text="Costo" prefWidth="120.0"/>
                         <TableColumn fx:id="precioColumn" text="Precio de venta" prefWidth="140.0"/>
                     </columns>

@@ -7,8 +7,9 @@ import jakarta.persistence.*;
         uniqueConstraints = @UniqueConstraint(name="uk_receta_ingrediente",
                 columnNames = {"id_receta","id_ingrediente"}))
 public class ProporcionIngrediente {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    public Long idProporcion;
+    @Id
+    @Column(name = "id_proporcion", length = 36)
+    public String idProporcion;
 
     @ManyToOne(optional = false) @JoinColumn(name = "id_receta", nullable = false)
     public Receta receta;
@@ -16,7 +17,14 @@ public class ProporcionIngrediente {
     @ManyToOne(optional = false) @JoinColumn(name = "id_ingrediente", nullable = false)
     public Ingrediente ingrediente;
 
-    public String proporcion; // p.ej. "12 g"
+    public Double proporcion;
+
+    @PrePersist
+    public void prePersist() {
+        if (idProporcion == null || idProporcion.isBlank()) {
+            idProporcion = java.util.UUID.randomUUID().toString();
+        }
+    }
 
     public ProporcionIngrediente() {}
 }

@@ -19,11 +19,14 @@
                         <Label text="Producto:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
                         <ComboBox fx:id="productoCombo" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-                        <Label text="Tamaño:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                        <TextField fx:id="tamanoField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                        <Label text="Nombre:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <TextField fx:id="nombreField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
-                        <Label text="Costo preparación:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                        <TextField fx:id="costoPrepField" promptText="0.00" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                        <Label text="Tamaño:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                        <TextField fx:id="tamanoField" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                        <Label text="Costo preparación:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                        <TextField fx:id="costoPrepField" promptText="0.00" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
                     </children>
                 </GridPane>
 
@@ -35,8 +38,9 @@
 
                 <TableView fx:id="recetasTable" prefHeight="250.0">
                     <columns>
-                        <TableColumn fx:id="idColumn" text="ID" prefWidth="70.0"/>
-                        <TableColumn fx:id="productoColumn" text="Producto" prefWidth="220.0"/>
+                        <TableColumn fx:id="idColumn" text="ID" prefWidth="150.0"/>
+                        <TableColumn fx:id="productoColumn" text="Producto" prefWidth="200.0"/>
+                        <TableColumn fx:id="nombreColumn" text="Nombre" prefWidth="180.0"/>
                         <TableColumn fx:id="tamanoColumn" text="Tamaño" prefWidth="140.0"/>
                         <TableColumn fx:id="costoColumn" text="Costo preparación" prefWidth="160.0"/>
                     </columns>

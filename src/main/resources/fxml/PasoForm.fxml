@@ -19,11 +19,8 @@
                         <Label text="Receta:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
                         <ComboBox fx:id="recetaCombo" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-                        <Label text="Nombre del paso:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                        <TextField fx:id="nombreField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-
-                        <Label text="Descripción general:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                        <TextArea fx:id="descripcionArea" prefRowCount="3" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                        <Label text="Número de paso:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <TextField fx:id="numeroPasoField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
                     </children>
                 </GridPane>
 
@@ -45,10 +42,10 @@
 
                 <TableView fx:id="pasosTable" prefHeight="250.0">
                     <columns>
-                        <TableColumn fx:id="idColumn" text="ID" prefWidth="70.0"/>
+                        <TableColumn fx:id="idColumn" text="ID" prefWidth="150.0"/>
                         <TableColumn fx:id="recetaColumn" text="Receta" prefWidth="220.0"/>
-                        <TableColumn fx:id="nombreColumn" text="Nombre" prefWidth="200.0"/>
-                        <TableColumn fx:id="descripcionColumn" text="Descripción" prefWidth="250.0"/>
+                        <TableColumn fx:id="numeroColumn" text="Número" prefWidth="120.0"/>
+                        <TableColumn fx:id="detallesColumn" text="Detalles" prefWidth="350.0"/>
                     </columns>
                 </TableView>
             </children>

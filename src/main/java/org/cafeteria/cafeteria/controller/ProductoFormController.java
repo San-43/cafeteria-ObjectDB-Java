@@ -19,11 +19,13 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public class ProductoFormController {
+    @FXML private TextField nombreField;
     @FXML private TextField descripcionField;
     @FXML private TextField costoField;
     @FXML private TextField precioVentaField;
     @FXML private TableView<Producto> productosTable;
-    @FXML private TableColumn<Producto, Long> idColumn;
+    @FXML private TableColumn<Producto, String> idColumn;
+    @FXML private TableColumn<Producto, String> nombreColumn;
     @FXML private TableColumn<Producto, String> descripcionColumn;
     @FXML private TableColumn<Producto, BigDecimal> costoColumn;
     @FXML private TableColumn<Producto, BigDecimal> precioColumn;
@@ -37,6 +39,7 @@ public class ProductoFormController {
     @FXML
     private void initialize() {
         idColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().idProducto));
+        nombreColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().nombre));
         descripcionColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().descripcion));
         costoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().costo));
         precioColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().precioVenta));
@@ -49,6 +52,7 @@ public class ProductoFormController {
 
         productosTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
             if (selected != null) {
+                nombreField.setText(selected.nombre);
                 descripcionField.setText(selected.descripcion);
                 costoField.setText(selected.costo != null ? selected.costo.toPlainString() : "");
                 precioVentaField.setText(selected.precioVenta != null ? selected.precioVenta.toPlainString() : "");
@@ -57,7 +61,7 @@ public class ProductoFormController {
 
         // Buscador
         if (searchFieldCombo != null) {
-            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Descripción", "Costo", "Precio"));
+            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Nombre", "Descripción", "Costo", "Precio"));
             searchFieldCombo.getSelectionModel().selectFirst();
             searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
         }
@@ -73,16 +77,18 @@ public class ProductoFormController {
         if (q.isBlank()) { filteredProductos.setPredicate(it -> true); return; }
         final String selectedField = (field == null) ? "Todos" : field;
         filteredProductos.setPredicate(it -> {
-            String id = it.idProducto != null ? String.valueOf(it.idProducto).toLowerCase() : "";
+            String id = it.idProducto != null ? it.idProducto.toLowerCase() : "";
+            String nombre = safeLower(it.nombre);
             String desc = safeLower(it.descripcion);
             String costo = it.costo != null ? it.costo.toPlainString().toLowerCase() : "";
             String precio = it.precioVenta != null ? it.precioVenta.toPlainString().toLowerCase() : "";
             switch (selectedField) {
                 case "ID": return id.contains(q);
+                case "Nombre": return nombre.contains(q);
                 case "Descripción": return desc.contains(q);
                 case "Costo": return costo.contains(q);
                 case "Precio": return precio.contains(q);
-                default: return id.contains(q) || desc.contains(q) || costo.contains(q) || precio.contains(q);
+                default: return id.contains(q) || nombre.contains(q) || desc.contains(q) || costo.contains(q) || precio.contains(q);
             }
         });
     }
@@ -96,11 +102,12 @@ public class ProductoFormController {
 
     @FXML
     private void onSave() {
-        String desc = descripcionField.getText();
-        if (desc == null || desc.isBlank()) {
-            alert(Alert.AlertType.WARNING, "Campo requerido", "La descripción es requerida.");
+        String nombre = nombreField.getText();
+        if (nombre == null || nombre.isBlank()) {
+            alert(Alert.AlertType.WARNING, "Campo requerido", "El nombre es requerido.");
             return;
         }
+        String desc = descripcionField.getText();
         BigDecimal costo = parseBigDecimal(costoField.getText(), "costo");
         if (costo == null) return;
         BigDecimal precio = parseBigDecimal(precioVentaField.getText(), "precio de venta");
@@ -110,7 +117,8 @@ public class ProductoFormController {
         try {
             em.getTransaction().begin();
             Producto p = new Producto();
-            p.descripcion = desc.trim();
+            p.nombre = nombre.trim();
+            p.descripcion = desc != null ? desc.trim() : null;
             p.costo = costo;
             p.precioVenta = precio;
             em.persist(p);
@@ -135,11 +143,12 @@ public class ProductoFormController {
             return;
         }
 
-        String desc = descripcionField.getText();
-        if (desc == null || desc.isBlank()) {
-            alert(Alert.AlertType.WARNING, "Campo requerido", "La descripción es requerida.");
+        String nombre = nombreField.getText();
+        if (nombre == null || nombre.isBlank()) {
+            alert(Alert.AlertType.WARNING, "Campo requerido", "El nombre es requerido.");
             return;
         }
+        String desc = descripcionField.getText();
         BigDecimal costo = parseBigDecimal(costoField.getText(), "costo");
         if (costo == null) return;
         BigDecimal precio = parseBigDecimal(precioVentaField.getText(), "precio de venta");
@@ -155,7 +164,8 @@ public class ProductoFormController {
                 loadProductos();
                 return;
             }
-            persistido.descripcion = desc.trim();
+            persistido.nombre = nombre.trim();
+            persistido.descripcion = desc != null ? desc.trim() : null;
             persistido.costo = costo;
             persistido.precioVenta = precio;
             em.getTransaction().commit();
@@ -205,11 +215,12 @@ public class ProductoFormController {
 
     @FXML
     private void onClear() {
+        nombreField.clear();
         descripcionField.clear();
         costoField.clear();
         precioVentaField.clear();
         productosTable.getSelectionModel().clearSelection();
-        descripcionField.requestFocus();
+        nombreField.requestFocus();
     }
 
     private BigDecimal parseBigDecimal(String s, String label) {
