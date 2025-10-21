@@ -37,3 +37,8 @@ build/
 
 ### Mac OS ###
 .DS_Store
+/lib/jdo-apache-license-2.0.txt
+/lib/jpa-2-eclipse-public-license-1.0.html
+/lib/jpa-3-eclipse-public-license-2.0.html
+/lib/jpa-eclipse-distribution-license-1.0.html
+/lib/objectdb-license-2.0.4.html
