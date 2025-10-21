@@ -19,12 +19,10 @@ import org.cafeteria.cafeteria.model.Ingrediente;
 public class IngredienteFormController {
     @FXML private TextField nombreField;
     @FXML private TextArea descripcionArea;
-    @FXML private TextArea preparacionArea;
     @FXML private TableView<Ingrediente> ingredientesTable;
-    @FXML private TableColumn<Ingrediente, Long> idColumn;
+    @FXML private TableColumn<Ingrediente, String> idColumn;
     @FXML private TableColumn<Ingrediente, String> nombreColumn;
     @FXML private TableColumn<Ingrediente, String> descripcionColumn;
-    @FXML private TableColumn<Ingrediente, String> preparacionColumn;
     // Buscador
     @FXML private ComboBox<String> searchFieldCombo;
     @FXML private TextField searchTextField;
@@ -37,7 +35,6 @@ public class IngredienteFormController {
         idColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().idIngrediente));
         nombreColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().nombre));
         descripcionColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().descripcion));
-        preparacionColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().preparacion));
 
 
         filteredIngredientes = new FilteredList<>(ingredientes, it -> true);
@@ -50,13 +47,12 @@ public class IngredienteFormController {
             if (selected != null) {
                 nombreField.setText(selected.nombre);
                 descripcionArea.setText(selected.descripcion);
-                preparacionArea.setText(selected.preparacion);
             }
         });
 
         // Inicializar opciones del buscador
         if (searchFieldCombo != null) {
-            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Nombre", "Descripción", "Preparación"));
+            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Nombre", "Descripción"));
             searchFieldCombo.getSelectionModel().selectFirst();
             searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o, a, b) -> applyFilter());
         }
@@ -75,10 +71,9 @@ public class IngredienteFormController {
             return;
         }
         filteredIngredientes.setPredicate(it -> {
-            String idStr = it.idIngrediente != null ? String.valueOf(it.idIngrediente).toLowerCase() : "";
+            String idStr = it.idIngrediente != null ? it.idIngrediente.toLowerCase() : "";
             String nombre = safeLower(it.nombre);
             String descripcion = safeLower(it.descripcion);
-            String preparacion = safeLower(it.preparacion);
 
             switch (field == null ? "Todos" : field) {
                 case "ID":
@@ -87,13 +82,10 @@ public class IngredienteFormController {
                     return nombre.contains(query);
                 case "Descripción":
                     return descripcion.contains(query);
-                case "Preparación":
-                    return preparacion.contains(query);
                 default: // "Todos"
                     return idStr.contains(query)
                             || nombre.contains(query)
-                            || descripcion.contains(query)
-                            || preparacion.contains(query);
+                            || descripcion.contains(query);
             }
         });
     }
@@ -120,7 +112,6 @@ public class IngredienteFormController {
             Ingrediente i = new Ingrediente();
             i.nombre = nombre.trim();
             i.descripcion = descripcionArea.getText();
-            i.preparacion = preparacionArea.getText();
             em.persist(i);
             em.getTransaction().commit();
             alert(Alert.AlertType.INFORMATION, "Guardado", "Ingrediente guardado con ID: " + i.idIngrediente);
@@ -161,7 +152,6 @@ public class IngredienteFormController {
             }
             persistido.nombre = nombre.trim();
             persistido.descripcion = descripcionArea.getText();
-            persistido.preparacion = preparacionArea.getText();
             em.getTransaction().commit();
             alert(Alert.AlertType.INFORMATION, "Actualizado", "Ingrediente actualizado correctamente.");
             loadIngredientes();
@@ -211,7 +201,6 @@ public class IngredienteFormController {
     private void onClear() {
         nombreField.clear();
         descripcionArea.clear();
-        preparacionArea.clear();
         ingredientesTable.getSelectionModel().clearSelection();
         nombreField.requestFocus();
     }

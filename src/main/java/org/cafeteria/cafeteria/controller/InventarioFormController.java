@@ -20,12 +20,16 @@ import java.util.function.Predicate;
 public class InventarioFormController {
     @FXML private ComboBox<Tienda> tiendaCombo;
     @FXML private ComboBox<Producto> productoCombo;
+    @FXML private DatePicker fechaIngresoPicker;
+    @FXML private DatePicker fechaConsumoPicker;
     @FXML private TextField stockField;
     @FXML private TableView<Inventario> inventarioTable;
-    @FXML private TableColumn<Inventario, Long> idColumn;
+    @FXML private TableColumn<Inventario, String> idColumn;
     @FXML private TableColumn<Inventario, String> tiendaColumn;
     @FXML private TableColumn<Inventario, String> productoColumn;
-    @FXML private TableColumn<Inventario, Integer> stockColumn;
+    @FXML private TableColumn<Inventario, java.time.LocalDate> fechaIngresoColumn;
+    @FXML private TableColumn<Inventario, java.time.LocalDate> fechaConsumoColumn;
+    @FXML private TableColumn<Inventario, Long> stockColumn;
     // Buscador
     @FXML private ComboBox<String> searchFieldCombo;
     @FXML private TextField searchTextField;
@@ -41,7 +45,9 @@ public class InventarioFormController {
         tiendaColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
                 cell.getValue().tienda != null ? cell.getValue().tienda.direccion : null));
         productoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
-                cell.getValue().producto != null ? cell.getValue().producto.descripcion : null));
+                cell.getValue().producto != null ? buildProductoLabel(cell.getValue().producto) : null));
+        fechaIngresoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().fechaIngreso));
+        fechaConsumoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().fechaConsumo));
         stockColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().stock));
 
         // Filtrado/ordenado
@@ -54,13 +60,15 @@ public class InventarioFormController {
             if (selected != null) {
                 selectComboValue(tiendaCombo, selected.tienda != null ? selected.tienda.idTienda : null);
                 selectComboValue(productoCombo, selected.producto != null ? selected.producto.idProducto : null);
+                fechaIngresoPicker.setValue(selected.fechaIngreso);
+                fechaConsumoPicker.setValue(selected.fechaConsumo);
                 stockField.setText(selected.stock != null ? selected.stock.toString() : "");
             }
         });
 
         // Buscador
         if (searchFieldCombo != null) {
-            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Tienda", "Producto", "Stock"));
+            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Tienda", "Producto", "Fecha ingreso", "Fecha consumo", "Stock"));
             searchFieldCombo.getSelectionModel().selectFirst();
             searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
         }
@@ -80,9 +88,11 @@ public class InventarioFormController {
     private Predicate<Inventario> makePredicate(String field, String q) {
         final String selectedField = (field == null) ? "Todos" : field;
         return it -> {
-            String id = it.idInventario != null ? String.valueOf(it.idInventario).toLowerCase() : "";
+            String id = it.idInventario != null ? it.idInventario.toLowerCase() : "";
             String tienda = it.tienda != null ? safeLower(it.tienda.direccion) : "";
-            String producto = it.producto != null ? safeLower(it.producto.descripcion) : "";
+            String producto = it.producto != null ? safeLower(buildProductoLabel(it.producto)) : "";
+            String ingreso = it.fechaIngreso != null ? it.fechaIngreso.toString().toLowerCase() : "";
+            String consumo = it.fechaConsumo != null ? it.fechaConsumo.toString().toLowerCase() : "";
             String stock = it.stock != null ? String.valueOf(it.stock).toLowerCase() : "";
             switch (selectedField) {
                 case "ID":
@@ -91,10 +101,14 @@ public class InventarioFormController {
                     return tienda.contains(q);
                 case "Producto":
                     return producto.contains(q);
+                case "Fecha ingreso":
+                    return ingreso.contains(q);
+                case "Fecha consumo":
+                    return consumo.contains(q);
                 case "Stock":
                     return stock.contains(q);
                 default: // "Todos"
-                    return id.contains(q) || tienda.contains(q) || producto.contains(q) || stock.contains(q);
+                    return id.contains(q) || tienda.contains(q) || producto.contains(q) || ingreso.contains(q) || consumo.contains(q) || stock.contains(q);
             }
         };
     }
@@ -132,14 +146,18 @@ public class InventarioFormController {
     @FXML private void onSave() {
         Tienda t = tiendaCombo.getValue();
         Producto p = productoCombo.getValue();
-        Integer stock = parseInt(stockField.getText(), "stock");
-        if (t==null || p==null || stock==null) { return; }
+        java.time.LocalDate fechaIngreso = fechaIngresoPicker.getValue();
+        java.time.LocalDate fechaConsumo = fechaConsumoPicker.getValue();
+        Long stock = parseLong(stockField.getText(), "stock");
+        if (t==null || p==null || fechaIngreso==null || fechaConsumo==null || stock==null) { return; }
         EntityManager em = JPAUtil.em();
         try {
             em.getTransaction().begin();
             Inventario inv = new Inventario();
             inv.tienda = em.find(Tienda.class, t.idTienda);
             inv.producto = em.find(Producto.class, p.idProducto);
+            inv.fechaIngreso = fechaIngreso;
+            inv.fechaConsumo = fechaConsumo;
             inv.stock = stock;
             em.persist(inv);
             em.getTransaction().commit();
@@ -162,8 +180,10 @@ public class InventarioFormController {
 
         Tienda t = tiendaCombo.getValue();
         Producto p = productoCombo.getValue();
-        Integer stock = parseInt(stockField.getText(), "stock");
-        if (t == null || p == null || stock == null) { return; }
+        java.time.LocalDate fechaIngreso = fechaIngresoPicker.getValue();
+        java.time.LocalDate fechaConsumo = fechaConsumoPicker.getValue();
+        Long stock = parseLong(stockField.getText(), "stock");
+        if (t == null || p == null || fechaIngreso == null || fechaConsumo == null || stock == null) { return; }
 
         EntityManager em = JPAUtil.em();
         try {
@@ -177,6 +197,8 @@ public class InventarioFormController {
             }
             persistido.tienda = em.find(Tienda.class, t.idTienda);
             persistido.producto = em.find(Producto.class, p.idProducto);
+            persistido.fechaIngreso = fechaIngreso;
+            persistido.fechaConsumo = fechaConsumo;
             persistido.stock = stock;
             em.getTransaction().commit();
             alert(Alert.AlertType.INFORMATION, "Actualizado", "Inventario actualizado correctamente.");
@@ -221,15 +243,17 @@ public class InventarioFormController {
     @FXML private void onClear() {
         tiendaCombo.getSelectionModel().clearSelection();
         productoCombo.getSelectionModel().clearSelection();
+        fechaIngresoPicker.setValue(null);
+        fechaConsumoPicker.setValue(null);
         stockField.clear();
         inventarioTable.getSelectionModel().clearSelection();
         tiendaCombo.requestFocus();
     }
 
-    private Integer parseInt(String s, String label) {
+    private Long parseLong(String s, String label) {
         try {
             if (s==null || s.isBlank()) { alert(Alert.AlertType.WARNING, "Campo requerido", "El "+label+" es requerido."); return null; }
-            return Integer.parseInt(s.trim());
+            return Long.parseLong(s.trim());
         } catch (Exception e) {
             alert(Alert.AlertType.WARNING, "Formato inválido", "Ingrese un "+label+" válido (por ejemplo 10).");
             return null;
@@ -246,7 +270,7 @@ public class InventarioFormController {
     private void loadInventario() {
         EntityManager em = JPAUtil.em();
         try {
-            List<Inventario> lista = em.createQuery("select i from Inventario i order by i.idInventario", Inventario.class)
+            List<Inventario> lista = em.createQuery("select i from Inventario i order by i.fechaIngreso", Inventario.class)
                     .getResultList();
             inventarios.setAll(lista);
             applyFilter();
@@ -258,7 +282,7 @@ public class InventarioFormController {
         }
     }
 
-    private <T> void selectComboValue(ComboBox<T> combo, Long id) {
+    private <T> void selectComboValue(ComboBox<T> combo, String id) {
         if (id == null) {
             combo.getSelectionModel().clearSelection();
             return;
@@ -274,5 +298,15 @@ public class InventarioFormController {
                 })
                 .findFirst()
                 .ifPresent(combo.getSelectionModel()::select);
+    }
+
+    private String buildProductoLabel(Producto producto) {
+        if (producto == null) return "";
+        String nombre = producto.nombre != null ? producto.nombre : "";
+        String descripcion = producto.descripcion != null ? producto.descripcion : "";
+        if (!nombre.isBlank() && !descripcion.isBlank()) {
+            return nombre + " — " + descripcion;
+        }
+        return !nombre.isBlank() ? nombre : descripcion;
     }
 }

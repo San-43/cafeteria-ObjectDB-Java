@@ -20,7 +20,7 @@ public class TiendaFormController {
     @FXML private TextField direccionField;
     @FXML private TextField empleadoField;
     @FXML private TableView<Tienda> tiendasTable;
-    @FXML private TableColumn<Tienda, Long> idColumn;
+    @FXML private TableColumn<Tienda, String> idColumn;
     @FXML private TableColumn<Tienda, String> telefonoColumn;
     @FXML private TableColumn<Tienda, String> direccionColumn;
     @FXML private TableColumn<Tienda, String> empleadoColumn;
@@ -68,7 +68,7 @@ public class TiendaFormController {
         if (q.isBlank()) { filteredTiendas.setPredicate(it -> true); return; }
         final String selectedField = (field == null) ? "Todos" : field;
         filteredTiendas.setPredicate(it -> {
-            String id = it.idTienda != null ? String.valueOf(it.idTienda).toLowerCase() : "";
+            String id = it.idTienda != null ? it.idTienda.toLowerCase() : "";
             String tel = safeLower(it.telefono);
             String dir = safeLower(it.direccion);
             String emp = safeLower(it.empleadoResponsable);

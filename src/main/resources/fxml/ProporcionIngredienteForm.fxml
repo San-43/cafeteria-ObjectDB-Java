@@ -23,7 +23,7 @@
                         <ComboBox fx:id="ingredienteCombo" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
                         <Label text="Proporción:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                        <TextField fx:id="proporcionField" promptText="Ej. 12 g, 150 ml" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                        <TextField fx:id="proporcionField" promptText="Ej. 12.0" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
                     </children>
                 </GridPane>
 

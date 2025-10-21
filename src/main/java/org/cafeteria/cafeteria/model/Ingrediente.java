@@ -2,14 +2,30 @@ package org.cafeteria.cafeteria.model;
 
 import jakarta.persistence.*;
 
-@Entity @Table(name = "ingredientes")
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+@Entity @Table(name = "ingrediente")
 public class Ingrediente {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    public Long idIngrediente;
+    @Id
+    @Column(name = "id_ingrediente", length = 36)
+    public String idIngrediente;
 
     public String nombre;
     @Lob public String descripcion;
-    @Lob public String preparacion;
+
+    @OneToMany(mappedBy = "ingrediente")
+    public Set<ProporcionIngrediente> enRecetas = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "ingrediente")
+    public Set<InventarioIngredientes> lotes = new LinkedHashSet<>();
+
+    @PrePersist
+    public void prePersist() {
+        if (idIngrediente == null || idIngrediente.isBlank()) {
+            idIngrediente = java.util.UUID.randomUUID().toString();
+        }
+    }
 
     public Ingrediente() {}
 }

@@ -11,23 +11,29 @@ import javafx.scene.control.*;
 import javafx.util.StringConverter;
 import org.cafeteria.cafeteria.config.JPAUtil;
 import org.cafeteria.cafeteria.model.Paso;
+import org.cafeteria.cafeteria.model.PasoDetalle;
 import org.cafeteria.cafeteria.model.Receta;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class PasoFormController {
     @FXML private ComboBox<Receta> recetaCombo;
-    @FXML private TextArea descripcionArea;
+    @FXML private TextField numeroPasoField;
+    @FXML private TextArea detalleArea;
+    @FXML private ListView<String> detallesList;
     @FXML private TableView<Paso> pasosTable;
-    @FXML private TableColumn<Paso, Long> idColumn;
+    @FXML private TableColumn<Paso, String> idColumn;
     @FXML private TableColumn<Paso, String> recetaColumn;
-    @FXML private TableColumn<Paso, String> descripcionColumn;
+    @FXML private TableColumn<Paso, Number> numeroColumn;
+    @FXML private TableColumn<Paso, String> detallesColumn;
     // Buscador
     @FXML private ComboBox<String> searchFieldCombo;
     @FXML private TextField searchTextField;
 
     private final ObservableList<Paso> pasos = FXCollections.observableArrayList();
     private FilteredList<Paso> filteredPasos;
+    private final ObservableList<String> detalles = FXCollections.observableArrayList();
 
     @FXML private void initialize() {
         loadRecetas();
@@ -37,7 +43,16 @@ public class PasoFormController {
                 cell.getValue().receta != null && cell.getValue().receta.producto != null
                         ? cell.getValue().receta.producto.descripcion + " (" + cell.getValue().receta.tamano + ")"
                         : ""));
-        descripcionColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().pasoDescripcion));
+        numeroColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().numeroPaso));
+        detallesColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().detalles == null
+                ? ""
+                : cell.getValue().detalles.stream()
+                        .map(d -> d.pasoDetalle)
+                        .collect(Collectors.joining(" | "))));
+
+        if (detallesList != null) {
+            detallesList.setItems(detalles);
+        }
 
         // Filtrado/ordenado
         filteredPasos = new FilteredList<>(pasos, it -> true);
@@ -48,13 +63,17 @@ public class PasoFormController {
         pasosTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
             if (selected != null) {
                 selectReceta(selected.receta != null ? selected.receta.idReceta : null);
-                descripcionArea.setText(selected.pasoDescripcion);
+                numeroPasoField.setText(selected.numeroPaso != null ? selected.numeroPaso.toString() : "");
+                detalles.setAll(selected.detalles == null ? List.of() : selected.detalles.stream()
+                        .map(d -> d.pasoDetalle)
+                        .collect(Collectors.toList()));
+                detalleArea.clear();
             }
         });
 
         // Buscador
         if (searchFieldCombo != null) {
-            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Receta", "Descripción"));
+            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Receta", "Número", "Detalle"));
             searchFieldCombo.getSelectionModel().selectFirst();
             searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
         }
@@ -70,14 +89,18 @@ public class PasoFormController {
         if (q.isBlank()) { filteredPasos.setPredicate(it -> true); return; }
         final String selectedField = (field == null) ? "Todos" : field;
         filteredPasos.setPredicate(it -> {
-            String id = it.idPaso != null ? String.valueOf(it.idPaso).toLowerCase() : "";
-            String receta = (it.receta!=null && it.receta.producto!=null ? safeLower(it.receta.producto.descripcion + " " + it.receta.tamano) : "");
-            String desc = safeLower(it.pasoDescripcion);
+            String id = it.idPaso != null ? it.idPaso.toLowerCase() : "";
+            String receta = safeLower(it.receta != null ? buildRecetaLabel(it.receta) : "");
+            String numero = it.numeroPaso != null ? String.valueOf(it.numeroPaso).toLowerCase() : "";
+            String detalle = safeLower(it.detalles == null ? "" : it.detalles.stream()
+                    .map(d -> d.pasoDetalle == null ? "" : d.pasoDetalle)
+                    .collect(Collectors.joining(" ")));
             switch (selectedField) {
                 case "ID": return id.contains(q);
                 case "Receta": return receta.contains(q);
-                case "Descripción": return desc.contains(q);
-                default: return id.contains(q) || receta.contains(q) || desc.contains(q);
+                case "Número": return numero.contains(q);
+                case "Detalle": return detalle.contains(q);
+                default: return id.contains(q) || receta.contains(q) || numero.contains(q) || detalle.contains(q);
             }
         });
     }
@@ -87,14 +110,14 @@ public class PasoFormController {
     private void loadRecetas() {
         EntityManager em = JPAUtil.em();
         try {
-            List<Receta> recetas = em.createQuery("select r from Receta r order by r.idReceta desc", Receta.class).getResultList();
+            List<Receta> recetas = em.createQuery("select r from Receta r order by r.nombre", Receta.class).getResultList();
             recetaCombo.setItems(FXCollections.observableArrayList(recetas));
             recetaCombo.setConverter(new StringConverter<>() {
-                @Override public String toString(Receta r) { return r == null ? "" : (r.idReceta + " — " + (r.producto!=null? r.producto.descripcion: "") + " (" + r.tamano + ")"); }
+                @Override public String toString(Receta r) { return r == null ? "" : buildRecetaLabel(r); }
                 @Override public Receta fromString(String s) { return null; }
             });
             recetaCombo.setCellFactory(cb -> new ListCell<>() {
-                @Override protected void updateItem(Receta item, boolean empty) { super.updateItem(item, empty); setText(empty||item==null?"": (item.idReceta + " — " + (item.producto!=null? item.producto.descripcion:"") + " ("+item.tamano+")")); }
+                @Override protected void updateItem(Receta item, boolean empty) { super.updateItem(item, empty); setText(empty||item==null?"": buildRecetaLabel(item)); }
             });
         } finally { em.close(); }
     }
@@ -106,15 +129,23 @@ public class PasoFormController {
     @FXML private void onSave() {
         Receta receta = recetaCombo.getValue();
         if (receta == null) { alert(Alert.AlertType.WARNING, "Campo requerido", "Selecciona una receta."); return; }
-        String desc = descripcionArea.getText();
-        if (desc == null || desc.isBlank()) { alert(Alert.AlertType.WARNING, "Campo requerido", "La descripción del paso es requerida."); return; }
+        Long numeroPaso = parseNumero(numeroPasoField.getText());
+        if (numeroPaso == null) return;
 
         EntityManager em = JPAUtil.em();
         try {
             em.getTransaction().begin();
             Paso p = new Paso();
             p.receta = em.find(Receta.class, receta.idReceta);
-            p.pasoDescripcion = desc.trim();
+            p.numeroPaso = numeroPaso;
+            if (!detalles.isEmpty()) {
+                for (String detalle : detalles) {
+                    PasoDetalle pd = new PasoDetalle();
+                    pd.paso = p;
+                    pd.pasoDetalle = detalle;
+                    p.detalles.add(pd);
+                }
+            }
             em.persist(p);
             em.getTransaction().commit();
             alert(Alert.AlertType.INFORMATION, "Guardado", "Paso guardado con ID: " + p.idPaso);
@@ -136,8 +167,8 @@ public class PasoFormController {
 
         Receta receta = recetaCombo.getValue();
         if (receta == null) { alert(Alert.AlertType.WARNING, "Campo requerido", "Selecciona una receta."); return; }
-        String desc = descripcionArea.getText();
-        if (desc == null || desc.isBlank()) { alert(Alert.AlertType.WARNING, "Campo requerido", "La descripción del paso es requerida."); return; }
+        Long numeroPaso = parseNumero(numeroPasoField.getText());
+        if (numeroPaso == null) return;
 
         EntityManager em = JPAUtil.em();
         try {
@@ -150,7 +181,16 @@ public class PasoFormController {
                 return;
             }
             persistido.receta = em.find(Receta.class, receta.idReceta);
-            persistido.pasoDescripcion = desc.trim();
+            persistido.numeroPaso = numeroPaso;
+            persistido.detalles.clear();
+            if (!detalles.isEmpty()) {
+                for (String detalle : detalles) {
+                    PasoDetalle pd = new PasoDetalle();
+                    pd.paso = persistido;
+                    pd.pasoDetalle = detalle;
+                    persistido.detalles.add(pd);
+                }
+            }
             em.getTransaction().commit();
             alert(Alert.AlertType.INFORMATION, "Actualizado", "Paso actualizado correctamente.");
             loadPasos();
@@ -193,9 +233,24 @@ public class PasoFormController {
 
     @FXML private void onClear() {
         recetaCombo.getSelectionModel().clearSelection();
-        descripcionArea.clear();
+        numeroPasoField.clear();
+        detalleArea.clear();
+        detalles.clear();
         pasosTable.getSelectionModel().clearSelection();
         recetaCombo.requestFocus();
+    }
+
+    private Long parseNumero(String value) {
+        try {
+            if (value == null || value.isBlank()) {
+                alert(Alert.AlertType.WARNING, "Campo requerido", "El número de paso es requerido.");
+                return null;
+            }
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException ex) {
+            alert(Alert.AlertType.WARNING, "Formato inválido", "Ingresa un número de paso válido.");
+            return null;
+        }
     }
 
     private void alert(Alert.AlertType type, String header, String content) {
@@ -208,7 +263,7 @@ public class PasoFormController {
     private void loadPasos() {
         EntityManager em = JPAUtil.em();
         try {
-            List<Paso> lista = em.createQuery("select p from Paso p order by p.idPaso", Paso.class).getResultList();
+            List<Paso> lista = em.createQuery("select distinct p from Paso p left join fetch p.detalles order by p.numeroPaso", Paso.class).getResultList();
             pasos.setAll(lista);
             applyFilter();
         } catch (Exception ex) {
@@ -217,7 +272,7 @@ public class PasoFormController {
         } finally { em.close(); }
     }
 
-    private void selectReceta(Long id) {
+    private void selectReceta(String id) {
         if (id == null) {
             recetaCombo.getSelectionModel().clearSelection();
             return;
@@ -226,5 +281,47 @@ public class PasoFormController {
                 .filter(r -> r.idReceta != null && r.idReceta.equals(id))
                 .findFirst()
                 .ifPresent(recetaCombo.getSelectionModel()::select);
+    }
+
+    @FXML private void onAddDetalle() {
+        if (detalleArea == null) return;
+        String detalle = detalleArea.getText();
+        if (detalle == null || detalle.isBlank()) {
+            alert(Alert.AlertType.WARNING, "Campo requerido", "Captura el detalle del paso antes de agregarlo.");
+            return;
+        }
+        detalles.add(detalle.trim());
+        detalleArea.clear();
+    }
+
+    @FXML private void onRemoveDetalle() {
+        if (detallesList == null) return;
+        String seleccionado = detallesList.getSelectionModel().getSelectedItem();
+        if (seleccionado == null) {
+            alert(Alert.AlertType.WARNING, "Seleccione un detalle", "Selecciona un detalle para eliminar.");
+            return;
+        }
+        detalles.remove(seleccionado);
+    }
+
+    private String buildRecetaLabel(Receta receta) {
+        if (receta == null) return "";
+        String nombre = receta.nombre != null ? receta.nombre : "";
+        String producto = receta.producto != null ?
+                (receta.producto.nombre != null && !receta.producto.nombre.isBlank()
+                        ? receta.producto.nombre
+                        : receta.producto.descripcion != null ? receta.producto.descripcion : "") : "";
+        StringBuilder sb = new StringBuilder();
+        if (!nombre.isBlank()) sb.append(nombre);
+        if (!producto.isBlank()) {
+            if (sb.length() > 0) sb.append(" — ");
+            sb.append(producto);
+        }
+        if (receta.tamano != null && !receta.tamano.isBlank()) {
+            if (sb.length() > 0) sb.append(" (" + receta.tamano + ")");
+            else sb.append(receta.tamano);
+        }
+        if (sb.length() == 0 && receta.idReceta != null) sb.append(receta.idReceta);
+        return sb.toString();
     }
 }

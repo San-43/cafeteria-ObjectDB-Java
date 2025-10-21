@@ -13,6 +13,7 @@
         <class>org.cafeteria.cafeteria.model.ProductoVendido</class>
         <class>org.cafeteria.cafeteria.model.Receta</class>
         <class>org.cafeteria.cafeteria.model.Paso</class>
+        <class>org.cafeteria.cafeteria.model.PasoDetalle</class>
         <class>org.cafeteria.cafeteria.model.Ingrediente</class>
         <class>org.cafeteria.cafeteria.model.ProporcionIngrediente</class>
         <class>org.cafeteria.cafeteria.model.InventarioIngredientes</class>
