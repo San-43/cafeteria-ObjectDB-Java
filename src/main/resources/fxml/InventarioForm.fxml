@@ -22,8 +22,14 @@
                         <Label text="Producto:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
                         <ComboBox fx:id="productoCombo" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
-                        <Label text="Stock:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                        <TextField fx:id="stockField" promptText="0" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                        <Label text="Fecha ingreso:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                        <DatePicker fx:id="fechaIngresoPicker" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                        <Label text="Fecha consumo:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                        <DatePicker fx:id="fechaConsumoPicker" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                        <Label text="Stock:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                        <TextField fx:id="stockField" promptText="0" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
                     </children>
                 </GridPane>
 
@@ -35,10 +41,12 @@
 
                 <TableView fx:id="inventarioTable" prefHeight="250.0">
                     <columns>
-                        <TableColumn fx:id="idColumn" text="ID" prefWidth="70.0"/>
-                        <TableColumn fx:id="tiendaColumn" text="Tienda" prefWidth="200.0"/>
+                        <TableColumn fx:id="idColumn" text="ID" prefWidth="150.0"/>
+                        <TableColumn fx:id="tiendaColumn" text="Tienda" prefWidth="180.0"/>
                         <TableColumn fx:id="productoColumn" text="Producto" prefWidth="200.0"/>
-                        <TableColumn fx:id="stockColumn" text="Stock" prefWidth="120.0"/>
+                        <TableColumn fx:id="fechaIngresoColumn" text="Fecha ingreso" prefWidth="140.0"/>
+                        <TableColumn fx:id="fechaConsumoColumn" text="Fecha consumo" prefWidth="140.0"/>
+                        <TableColumn fx:id="stockColumn" text="Stock" prefWidth="100.0"/>
                     </columns>
                 </TableView>
             </children>

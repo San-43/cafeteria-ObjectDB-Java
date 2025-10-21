@@ -23,7 +23,7 @@ public class ProductoVendidoFormController {
     @FXML private TextField cantidadField;
     @FXML private TextField precioField;
     @FXML private TableView<ProductoVendido> vendidosTable;
-    @FXML private TableColumn<ProductoVendido, Long> idColumn;
+    @FXML private TableColumn<ProductoVendido, String> idColumn;
     @FXML private TableColumn<ProductoVendido, String> ventaColumn;
     @FXML private TableColumn<ProductoVendido, String> productoColumn;
     @FXML private TableColumn<ProductoVendido, Integer> cantidadColumn;
@@ -41,9 +41,9 @@ public class ProductoVendidoFormController {
 
         idColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().idProductoVendido));
         ventaColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
-                cell.getValue().venta != null ? "#" + cell.getValue().venta.idVenta + " — " + cell.getValue().venta.fecha : ""));
+                cell.getValue().venta != null ? cell.getValue().venta.idVenta + " — " + cell.getValue().venta.fecha : ""));
         productoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
-                cell.getValue().producto != null ? cell.getValue().producto.descripcion : ""));
+                cell.getValue().producto != null ? buildProductoLabel(cell.getValue().producto) : ""));
         cantidadColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().cantidad));
         precioColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().precio));
 
@@ -80,9 +80,9 @@ public class ProductoVendidoFormController {
         if (q.isBlank()) { filteredVendidos.setPredicate(it -> true); return; }
         final String selectedField = (field == null) ? "Todos" : field;
         filteredVendidos.setPredicate(it -> {
-            String id = it.idProductoVendido != null ? String.valueOf(it.idProductoVendido).toLowerCase() : "";
-            String venta = it.venta != null ? safeLower("#"+it.venta.idVenta + " " + it.venta.fecha.toString()) : "";
-            String prod = it.producto != null ? safeLower(it.producto.descripcion) : "";
+            String id = it.idProductoVendido != null ? it.idProductoVendido.toLowerCase() : "";
+            String venta = it.venta != null ? safeLower(it.venta.idVenta + " " + String.valueOf(it.venta.fecha)) : "";
+            String prod = it.producto != null ? safeLower(buildProductoLabel(it.producto)) : "";
             String cant = it.cantidad != null ? String.valueOf(it.cantidad).toLowerCase() : "";
             String precio = it.precio != null ? it.precio.toPlainString().toLowerCase() : "";
             switch (selectedField) {
@@ -104,7 +104,7 @@ public class ProductoVendidoFormController {
             List<Venta> ventas = em.createQuery("select v from Venta v order by v.fecha desc", Venta.class).getResultList();
             ventaCombo.setItems(FXCollections.observableArrayList(ventas));
             ventaCombo.setConverter(new StringConverter<>() {
-                @Override public String toString(Venta v) { return v==null?"": ("#"+v.idVenta + " — " + (v.tienda!=null? v.tienda.direccion:"") + " — " + v.fecha); }
+                @Override public String toString(Venta v) { return v==null?"": (v.idVenta + " — " + (v.tienda!=null? v.tienda.direccion:"") + " — " + v.fecha); }
                 @Override public Venta fromString(String s) { return null; }
             });
         } finally { em.close(); }
@@ -113,10 +113,10 @@ public class ProductoVendidoFormController {
     private void loadProductos() {
         EntityManager em = JPAUtil.em();
         try {
-            List<Producto> productos = em.createQuery("select p from Producto p order by p.descripcion", Producto.class).getResultList();
+            List<Producto> productos = em.createQuery("select p from Producto p order by p.nombre", Producto.class).getResultList();
             productoCombo.setItems(FXCollections.observableArrayList(productos));
             productoCombo.setConverter(new StringConverter<>() {
-                @Override public String toString(Producto p) { return p==null?"": p.descripcion; }
+                @Override public String toString(Producto p) { return p==null?"": buildProductoLabel(p); }
                 @Override public Producto fromString(String s) { return null; }
             });
         } finally { em.close(); }
@@ -271,7 +271,7 @@ public class ProductoVendidoFormController {
         } finally { em.close(); }
     }
 
-    private void selectVenta(Long id) {
+    private void selectVenta(String id) {
         if (id == null) {
             ventaCombo.getSelectionModel().clearSelection();
             return;
@@ -282,7 +282,7 @@ public class ProductoVendidoFormController {
                 .ifPresent(ventaCombo.getSelectionModel()::select);
     }
 
-    private void selectProducto(Long id) {
+    private void selectProducto(String id) {
         if (id == null) {
             productoCombo.getSelectionModel().clearSelection();
             return;
@@ -291,6 +291,16 @@ public class ProductoVendidoFormController {
                 .filter(prod -> prod.idProducto != null && prod.idProducto.equals(id))
                 .findFirst()
                 .ifPresent(productoCombo.getSelectionModel()::select);
+    }
+
+    private String buildProductoLabel(Producto producto) {
+        if (producto == null) return "";
+        String nombre = producto.nombre != null ? producto.nombre : "";
+        String descripcion = producto.descripcion != null ? producto.descripcion : "";
+        if (!nombre.isBlank() && !descripcion.isBlank()) {
+            return nombre + " — " + descripcion;
+        }
+        return !nombre.isBlank() ? nombre : descripcion;
     }
 }
 

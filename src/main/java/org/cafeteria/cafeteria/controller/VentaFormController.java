@@ -11,24 +11,23 @@ import javafx.scene.control.*;
 import javafx.util.StringConverter;
 import org.cafeteria.cafeteria.config.JPAUtil;
 import org.cafeteria.cafeteria.model.Tienda;
+import org.cafeteria.cafeteria.model.Producto;
 import org.cafeteria.cafeteria.model.Venta;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class VentaFormController {
     @FXML private ComboBox<Tienda> tiendaCombo;
+    @FXML private ComboBox<Producto> productoCombo;
     @FXML private DatePicker fechaPicker;
-    @FXML private TextField horaField;
     @FXML private TextField totalField;
     @FXML private TableView<Venta> ventasTable;
-    @FXML private TableColumn<Venta, Long> idColumn;
+    @FXML private TableColumn<Venta, String> idColumn;
     @FXML private TableColumn<Venta, String> tiendaColumn;
-    @FXML private TableColumn<Venta, LocalDateTime> fechaColumn;
+    @FXML private TableColumn<Venta, String> productoColumn;
+    @FXML private TableColumn<Venta, LocalDate> fechaColumn;
     @FXML private TableColumn<Venta, BigDecimal> totalColumn;
     // Buscador
     @FXML private ComboBox<String> searchFieldCombo;
@@ -39,12 +38,14 @@ public class VentaFormController {
 
     @FXML private void initialize() {
         loadTiendas();
+        loadProductos();
         fechaPicker.setValue(LocalDate.now());
-        horaField.setText(LocalTime.now().withSecond(0).withNano(0).toString());
 
         idColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().idVenta));
         tiendaColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
                 cell.getValue().tienda != null ? cell.getValue().tienda.direccion : ""));
+        productoColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
+                cell.getValue().producto != null ? buildProductoLabel(cell.getValue().producto) : ""));
         fechaColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().fecha));
         totalColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().total));
 
@@ -57,20 +58,15 @@ public class VentaFormController {
         ventasTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
             if (selected != null) {
                 selectTienda(selected.tienda != null ? selected.tienda.idTienda : null);
-                if (selected.fecha != null) {
-                    fechaPicker.setValue(selected.fecha.toLocalDate());
-                    horaField.setText(selected.fecha.toLocalTime().withSecond(0).withNano(0).toString());
-                } else {
-                    fechaPicker.setValue(LocalDate.now());
-                    horaField.setText("");
-                }
+                selectProducto(selected.producto != null ? selected.producto.idProducto : null);
+                fechaPicker.setValue(selected.fecha);
                 totalField.setText(selected.total != null ? selected.total.toPlainString() : "");
             }
         });
 
         // Buscador
         if (searchFieldCombo != null) {
-            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Tienda", "Fecha", "Total"));
+            searchFieldCombo.setItems(FXCollections.observableArrayList("Todos", "ID", "Tienda", "Producto", "Fecha", "Total"));
             searchFieldCombo.getSelectionModel().selectFirst();
             searchFieldCombo.getSelectionModel().selectedItemProperty().addListener((o,a,b) -> applyFilter());
         }
@@ -98,16 +94,18 @@ public class VentaFormController {
         if (q.isBlank()) { filteredVentas.setPredicate(it -> true); return; }
         final String selectedField = (field == null) ? "Todos" : field;
         filteredVentas.setPredicate(it -> {
-            String id = it.idVenta != null ? String.valueOf(it.idVenta).toLowerCase() : "";
+            String id = it.idVenta != null ? it.idVenta.toLowerCase() : "";
             String tienda = it.tienda != null ? safeLower(it.tienda.direccion) : "";
+            String producto = it.producto != null ? safeLower(buildProductoLabel(it.producto)) : "";
             String fecha = it.fecha != null ? safeLower(it.fecha.toString()) : "";
             String total = it.total != null ? it.total.toPlainString().toLowerCase() : "";
             switch (selectedField) {
                 case "ID": return id.contains(q);
                 case "Tienda": return tienda.contains(q);
+                case "Producto": return producto.contains(q);
                 case "Fecha": return fecha.contains(q);
                 case "Total": return total.contains(q);
-                default: return id.contains(q) || tienda.contains(q) || fecha.contains(q) || total.contains(q);
+                default: return id.contains(q) || tienda.contains(q) || producto.contains(q) || fecha.contains(q) || total.contains(q);
             }
         });
     }
@@ -120,17 +118,18 @@ public class VentaFormController {
 
     @FXML private void onSave() {
         Tienda t = tiendaCombo.getValue();
+        Producto producto = productoCombo.getValue();
         LocalDate fecha = fechaPicker.getValue();
-        LocalTime hora = parseHora(horaField.getText());
         BigDecimal total = parseBigDecimal(totalField.getText(), "total");
-        if (t==null || fecha==null || hora==null || total==null) return;
+        if (t==null || producto==null || fecha==null || total==null) return;
 
         EntityManager em = JPAUtil.em();
         try {
             em.getTransaction().begin();
             Venta v = new Venta();
             v.tienda = em.find(Tienda.class, t.idTienda);
-            v.fecha = LocalDateTime.of(fecha, hora);
+            v.producto = em.find(Producto.class, producto.idProducto);
+            v.fecha = fecha;
             v.total = total;
             em.persist(v);
             em.getTransaction().commit();
@@ -152,10 +151,10 @@ public class VentaFormController {
         }
 
         Tienda t = tiendaCombo.getValue();
+        Producto producto = productoCombo.getValue();
         LocalDate fecha = fechaPicker.getValue();
-        LocalTime hora = parseHora(horaField.getText());
         BigDecimal total = parseBigDecimal(totalField.getText(), "total");
-        if (t==null || fecha==null || hora==null || total==null) return;
+        if (t==null || producto==null || fecha==null || total==null) return;
 
         EntityManager em = JPAUtil.em();
         try {
@@ -168,7 +167,8 @@ public class VentaFormController {
                 return;
             }
             persistida.tienda = em.find(Tienda.class, t.idTienda);
-            persistida.fecha = LocalDateTime.of(fecha, hora);
+            persistida.producto = em.find(Producto.class, producto.idProducto);
+            persistida.fecha = fecha;
             persistida.total = total;
             em.getTransaction().commit();
             alert(Alert.AlertType.INFORMATION, "Actualizado", "Venta actualizada correctamente.");
@@ -212,25 +212,11 @@ public class VentaFormController {
 
     @FXML private void onClear() {
         tiendaCombo.getSelectionModel().clearSelection();
+        productoCombo.getSelectionModel().clearSelection();
         fechaPicker.setValue(LocalDate.now());
-        horaField.setText(LocalTime.now().withSecond(0).withNano(0).toString());
         totalField.clear();
         ventasTable.getSelectionModel().clearSelection();
         tiendaCombo.requestFocus();
-    }
-
-    private LocalTime parseHora(String s) {
-        try {
-            if (s==null || s.isBlank()) { alert(Alert.AlertType.WARNING, "Campo requerido", "La hora es requerida (formato HH:mm). "); return null; }
-            return LocalTime.parse(s.trim(), DateTimeFormatter.ofPattern("H:mm"));
-        } catch (Exception e) {
-            try {
-                return LocalTime.parse(s.trim());
-            } catch (Exception ex) {
-                alert(Alert.AlertType.WARNING, "Formato inválido", "Ingrese una hora válida (por ejemplo 14:30).");
-                return null;
-            }
-        }
     }
 
     private BigDecimal parseBigDecimal(String s, String label) {
@@ -253,7 +239,7 @@ public class VentaFormController {
     private void loadVentas() {
         EntityManager em = JPAUtil.em();
         try {
-            List<Venta> lista = em.createQuery("select v from Venta v order by v.idVenta", Venta.class)
+            List<Venta> lista = em.createQuery("select v from Venta v order by v.fecha", Venta.class)
                     .getResultList();
             ventas.setAll(lista);
             applyFilter();
@@ -263,7 +249,7 @@ public class VentaFormController {
         } finally { em.close(); }
     }
 
-    private void selectTienda(Long id) {
+    private void selectTienda(String id) {
         if (id == null) {
             tiendaCombo.getSelectionModel().clearSelection();
             return;
@@ -272,5 +258,38 @@ public class VentaFormController {
                 .filter(t -> t.idTienda != null && t.idTienda.equals(id))
                 .findFirst()
                 .ifPresent(tiendaCombo.getSelectionModel()::select);
+    }
+
+    private void selectProducto(String id) {
+        if (id == null) {
+            productoCombo.getSelectionModel().clearSelection();
+            return;
+        }
+        productoCombo.getItems().stream()
+                .filter(p -> p.idProducto != null && p.idProducto.equals(id))
+                .findFirst()
+                .ifPresent(productoCombo.getSelectionModel()::select);
+    }
+
+    private void loadProductos() {
+        EntityManager em = JPAUtil.em();
+        try {
+            List<Producto> productos = em.createQuery("select p from Producto p order by p.nombre", Producto.class).getResultList();
+            productoCombo.setItems(FXCollections.observableArrayList(productos));
+            productoCombo.setConverter(new StringConverter<>() {
+                @Override public String toString(Producto p) { return p==null?"": buildProductoLabel(p); }
+                @Override public Producto fromString(String s) { return null; }
+            });
+        } finally { em.close(); }
+    }
+
+    private String buildProductoLabel(Producto producto) {
+        if (producto == null) return "";
+        String nombre = producto.nombre != null ? producto.nombre : "";
+        String descripcion = producto.descripcion != null ? producto.descripcion : "";
+        if (!nombre.isBlank() && !descripcion.isBlank()) {
+            return nombre + " — " + descripcion;
+        }
+        return !nombre.isBlank() ? nombre : descripcion;
     }
 }

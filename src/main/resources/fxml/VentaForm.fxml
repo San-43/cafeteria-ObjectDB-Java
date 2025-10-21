@@ -19,11 +19,11 @@
                         <Label text="Tienda:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
                         <ComboBox fx:id="tiendaCombo" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-                        <Label text="Fecha:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                        <DatePicker fx:id="fechaPicker" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                        <Label text="Producto:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <ComboBox fx:id="productoCombo" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
-                        <Label text="Hora (HH:mm):" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                        <TextField fx:id="horaField" promptText="Ej. 14:30" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                        <Label text="Fecha:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                        <DatePicker fx:id="fechaPicker" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
 
                         <Label text="Total:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
                         <TextField fx:id="totalField" promptText="0.00" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
@@ -38,9 +38,10 @@
 
                 <TableView fx:id="ventasTable" prefHeight="250.0">
                     <columns>
-                        <TableColumn fx:id="idColumn" text="ID" prefWidth="70.0"/>
+                        <TableColumn fx:id="idColumn" text="ID" prefWidth="150.0"/>
                         <TableColumn fx:id="tiendaColumn" text="Tienda" prefWidth="200.0"/>
-                        <TableColumn fx:id="fechaColumn" text="Fecha" prefWidth="180.0"/>
+                        <TableColumn fx:id="productoColumn" text="Producto" prefWidth="200.0"/>
+                        <TableColumn fx:id="fechaColumn" text="Fecha" prefWidth="160.0"/>
                         <TableColumn fx:id="totalColumn" text="Total" prefWidth="140.0"/>
                     </columns>
                 </TableView>

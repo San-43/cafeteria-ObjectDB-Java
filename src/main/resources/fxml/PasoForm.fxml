@@ -19,10 +19,20 @@
                         <Label text="Receta:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
                         <ComboBox fx:id="recetaCombo" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-                        <Label text="Descripción del paso:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                        <TextArea fx:id="descripcionArea" prefRowCount="4" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                        <Label text="Número de paso:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <TextField fx:id="numeroPasoField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
                     </children>
                 </GridPane>
+
+                <VBox spacing="8">
+                    <Label text="Detalles del paso:"/>
+                    <TextArea fx:id="detalleArea" prefRowCount="3" promptText="Descripción detallada del paso"/>
+                    <HBox spacing="10" alignment="CENTER_RIGHT">
+                        <Button text="Agregar detalle" onAction="#onAddDetalle"/>
+                        <Button text="Eliminar detalle" onAction="#onRemoveDetalle"/>
+                    </HBox>
+                    <ListView fx:id="detallesList" prefHeight="120"/>
+                </VBox>
 
                 <HBox spacing="10" alignment="CENTER_LEFT">
                     <Label text="Buscar por:"/>
@@ -32,9 +42,10 @@
 
                 <TableView fx:id="pasosTable" prefHeight="250.0">
                     <columns>
-                        <TableColumn fx:id="idColumn" text="ID" prefWidth="70.0"/>
+                        <TableColumn fx:id="idColumn" text="ID" prefWidth="150.0"/>
                         <TableColumn fx:id="recetaColumn" text="Receta" prefWidth="220.0"/>
-                        <TableColumn fx:id="descripcionColumn" text="Descripción" prefWidth="250.0"/>
+                        <TableColumn fx:id="numeroColumn" text="Número" prefWidth="120.0"/>
+                        <TableColumn fx:id="detallesColumn" text="Detalles" prefWidth="350.0"/>
                     </columns>
                 </TableView>
             </children>

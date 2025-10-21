@@ -19,10 +19,10 @@ public class ProporcionIngredienteFormController {
     @FXML private ComboBox<Ingrediente> ingredienteCombo;
     @FXML private TextField proporcionField;
     @FXML private TableView<ProporcionIngrediente> proporcionesTable;
-    @FXML private TableColumn<ProporcionIngrediente, Long> idColumn;
+    @FXML private TableColumn<ProporcionIngrediente, String> idColumn;
     @FXML private TableColumn<ProporcionIngrediente, String> recetaColumn;
     @FXML private TableColumn<ProporcionIngrediente, String> ingredienteColumn;
-    @FXML private TableColumn<ProporcionIngrediente, String> proporcionColumn;
+    @FXML private TableColumn<ProporcionIngrediente, Double> proporcionColumn;
     @FXML private ComboBox<String> searchFieldCombo;
     @FXML private TextField searchTextField;
 
@@ -34,9 +34,7 @@ public class ProporcionIngredienteFormController {
 
         idColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().idProporcion));
         recetaColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
-                cell.getValue().receta != null && cell.getValue().receta.producto != null
-                        ? cell.getValue().receta.producto.descripcion + " (" + cell.getValue().receta.tamano + ")"
-                        : ""));
+                cell.getValue().receta != null ? buildRecetaLabel(cell.getValue().receta) : ""));
         ingredienteColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
                 cell.getValue().ingrediente != null ? cell.getValue().ingrediente.nombre : ""));
         proporcionColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().proporcion));
@@ -46,7 +44,7 @@ public class ProporcionIngredienteFormController {
             if (selected != null) {
                 selectReceta(selected.receta != null ? selected.receta.idReceta : null);
                 selectIngrediente(selected.ingrediente != null ? selected.ingrediente.idIngrediente : null);
-                proporcionField.setText(selected.proporcion);
+                proporcionField.setText(selected.proporcion != null ? selected.proporcion.toString() : "");
             }
         });
 
@@ -76,20 +74,14 @@ public class ProporcionIngredienteFormController {
             jakarta.persistence.TypedQuery<ProporcionIngrediente> query;
             switch (field) {
                 case "ID":
-                    try {
-                        Long id = Long.parseLong(text.trim());
-                        query = em.createQuery("select p from ProporcionIngrediente p where p.idProporcion = :id", ProporcionIngrediente.class);
-                        query.setParameter("id", id);
-                    } catch (NumberFormatException nfe) {
-                        alert(Alert.AlertType.WARNING, "Buscar por ID", "ID inválido.");
-                        return;
-                    }
+                    query = em.createQuery("select p from ProporcionIngrediente p where lower(p.idProporcion) like :id", ProporcionIngrediente.class);
+                    query.setParameter("id", "%" + text.trim().toLowerCase() + "%");
                     break;
                 case "Receta":
                     String tRec = "%" + text.trim().toLowerCase() + "%";
                     query = em.createQuery(
                             "select p from ProporcionIngrediente p join p.receta r join r.producto prod " +
-                                    "where lower(prod.descripcion) like :t or lower(r.tamano) like :t",
+                                    "where lower(prod.nombre) like :t or lower(prod.descripcion) like :t or lower(r.nombre) like :t or lower(r.tamano) like :t",
                             ProporcionIngrediente.class);
                     query.setParameter("t", tRec);
                     break;
@@ -101,11 +93,16 @@ public class ProporcionIngredienteFormController {
                     query.setParameter("t", tIng);
                     break;
                 case "Proporción":
-                    String tProp = "%" + text.trim().toLowerCase() + "%";
-                    query = em.createQuery(
-                            "select p from ProporcionIngrediente p where lower(p.proporcion) like :t",
-                            ProporcionIngrediente.class);
-                    query.setParameter("t", tProp);
+                    try {
+                        Double valor = Double.parseDouble(text.trim());
+                        query = em.createQuery(
+                                "select p from ProporcionIngrediente p where p.proporcion = :valor",
+                                ProporcionIngrediente.class);
+                        query.setParameter("valor", valor);
+                    } catch (NumberFormatException nfe) {
+                        alert(Alert.AlertType.WARNING, "Buscar por proporción", "Ingresa un número válido.");
+                        return;
+                    }
                     break;
                 default:
                     loadProporciones();
@@ -124,10 +121,10 @@ public class ProporcionIngredienteFormController {
     private void loadRecetas() {
         EntityManager em = JPAUtil.em();
         try {
-            List<Receta> recetas = em.createQuery("select r from Receta r order by r.idReceta desc", Receta.class).getResultList();
+            List<Receta> recetas = em.createQuery("select r from Receta r order by r.nombre", Receta.class).getResultList();
             recetaCombo.setItems(FXCollections.observableArrayList(recetas));
             recetaCombo.setConverter(new StringConverter<>() {
-                @Override public String toString(Receta r) { return r==null?"": (r.idReceta+" — " + (r.producto!=null? r.producto.descripcion:"") + " ("+r.tamano+")"); }
+                @Override public String toString(Receta r) { return r==null?"": buildRecetaLabel(r); }
                 @Override public Receta fromString(String s) { return null; }
             });
         } finally { em.close(); }
@@ -152,8 +149,8 @@ public class ProporcionIngredienteFormController {
     @FXML private void onSave() {
         Receta r = recetaCombo.getValue();
         Ingrediente i = ingredienteCombo.getValue();
-        String prop = proporcionField.getText();
-        if (r == null || i == null || prop == null || prop.isBlank()) {
+        Double prop = parseDouble(proporcionField.getText());
+        if (r == null || i == null || prop == null) {
             alert(Alert.AlertType.WARNING, "Campos requeridos", "Selecciona receta, ingrediente y escribe la proporción.");
             return;
         }
@@ -163,7 +160,7 @@ public class ProporcionIngredienteFormController {
             ProporcionIngrediente pi = new ProporcionIngrediente();
             pi.receta = em.find(Receta.class, r.idReceta);
             pi.ingrediente = em.find(Ingrediente.class, i.idIngrediente);
-            pi.proporcion = prop.trim();
+            pi.proporcion = prop;
             em.persist(pi);
             em.getTransaction().commit();
             alert(Alert.AlertType.INFORMATION, "Guardado", "Proporción guardada con ID: " + pi.idProporcion);
@@ -185,8 +182,8 @@ public class ProporcionIngredienteFormController {
 
         Receta r = recetaCombo.getValue();
         Ingrediente i = ingredienteCombo.getValue();
-        String prop = proporcionField.getText();
-        if (r == null || i == null || prop == null || prop.isBlank()) {
+        Double prop = parseDouble(proporcionField.getText());
+        if (r == null || i == null || prop == null) {
             alert(Alert.AlertType.WARNING, "Campos requeridos", "Selecciona receta, ingrediente y escribe la proporción.");
             return;
         }
@@ -203,7 +200,7 @@ public class ProporcionIngredienteFormController {
             }
             persistido.receta = em.find(Receta.class, r.idReceta);
             persistido.ingrediente = em.find(Ingrediente.class, i.idIngrediente);
-            persistido.proporcion = prop.trim();
+            persistido.proporcion = prop;
             em.getTransaction().commit();
             alert(Alert.AlertType.INFORMATION, "Actualizado", "Registro actualizado correctamente.");
             loadProporciones();
@@ -263,7 +260,7 @@ public class ProporcionIngredienteFormController {
         EntityManager em = JPAUtil.em();
         try {
             List<ProporcionIngrediente> lista = em.createQuery(
-                            "select p from ProporcionIngrediente p order by p.idProporcion",
+                            "select p from ProporcionIngrediente p order by p.receta.nombre, p.ingrediente.nombre",
                             ProporcionIngrediente.class)
                     .getResultList();
             proporciones.setAll(lista);
@@ -273,7 +270,7 @@ public class ProporcionIngredienteFormController {
         } finally { em.close(); }
     }
 
-    private void selectReceta(Long id) {
+    private void selectReceta(String id) {
         if (id == null) {
             recetaCombo.getSelectionModel().clearSelection();
             return;
@@ -284,7 +281,7 @@ public class ProporcionIngredienteFormController {
                 .ifPresent(recetaCombo.getSelectionModel()::select);
     }
 
-    private void selectIngrediente(Long id) {
+    private void selectIngrediente(String id) {
         if (id == null) {
             ingredienteCombo.getSelectionModel().clearSelection();
             return;
@@ -293,5 +290,41 @@ public class ProporcionIngredienteFormController {
                 .filter(ing -> ing.idIngrediente != null && ing.idIngrediente.equals(id))
                 .findFirst()
                 .ifPresent(ingredienteCombo.getSelectionModel()::select);
+    }
+
+    private Double parseDouble(String value) {
+        try {
+            if (value == null || value.isBlank()) {
+                return null;
+            }
+            return Double.parseDouble(value.trim());
+        } catch (NumberFormatException ex) {
+            alert(Alert.AlertType.WARNING, "Formato inválido", "Ingresa un número válido (por ejemplo 0.5).");
+            return null;
+        }
+    }
+
+    private String buildRecetaLabel(Receta receta) {
+        if (receta == null) return "";
+        String nombre = receta.nombre != null ? receta.nombre : "";
+        String producto = receta.producto != null ? (receta.producto.nombre != null && !receta.producto.nombre.isBlank()
+                ? receta.producto.nombre
+                : receta.producto.descripcion != null ? receta.producto.descripcion : "") : "";
+        StringBuilder sb = new StringBuilder();
+        if (!nombre.isBlank()) {
+            sb.append(nombre);
+        }
+        if (!producto.isBlank()) {
+            if (sb.length() > 0) sb.append(" — ");
+            sb.append(producto);
+        }
+        if (receta.tamano != null && !receta.tamano.isBlank()) {
+            if (sb.length() > 0) sb.append(" (" + receta.tamano + ")");
+            else sb.append(receta.tamano);
+        }
+        if (sb.length() == 0) {
+            sb.append(receta.idReceta != null ? receta.idReceta : "");
+        }
+        return sb.toString();
     }
 }
