@@ -3,14 +3,15 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="org.cafeteria.cafeteria.controller.PasoFormController">
+            fx:controller="org.cafeteria.cafeteria.controller.PasoFormController"
+            stylesheets="@../styles/app.css" styleClass="border-pane view-root">
     <center>
-        <VBox spacing="15">
+        <VBox spacing="15" styleClass="vbox form-container">
             <padding>
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
             <children>
-                <GridPane hgap="10" vgap="10">
+                <GridPane styleClass="grid-pane form-grid">
                     <columnConstraints>
                         <ColumnConstraints percentWidth="30"/>
                         <ColumnConstraints percentWidth="70"/>
@@ -24,8 +25,8 @@
                     </children>
                 </GridPane>
 
-                <VBox spacing="8">
-                    <Label text="Detalles del paso:"/>
+                <VBox spacing="8" styleClass="vbox form-subsection">
+                    <Label text="Detalles del paso:" styleClass="label table-title"/>
                     <TextArea fx:id="detalleArea" prefRowCount="3" promptText="Descripción detallada del paso"/>
                     <HBox spacing="10" alignment="CENTER_RIGHT">
                         <Button text="Agregar detalle" onAction="#onAddDetalle"/>
@@ -52,7 +53,7 @@
         </VBox>
     </center>
     <bottom>
-        <HBox spacing="10" alignment="CENTER_RIGHT">
+        <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="hbox form-actions">
             <padding>
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>

@@ -4,28 +4,31 @@
 <?import javafx.scene.layout.*?>
 
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="org.cafeteria.cafeteria.controller.MainController">
+            fx:controller="org.cafeteria.cafeteria.controller.MainController"
+            stylesheets="@../styles/app.css" styleClass="border-pane view-root">
     <left>
-        <VBox spacing="8" BorderPane.alignment="CENTER_LEFT" style="-fx-background-color: #f7f7f7;" prefWidth="240">
-            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
-            <Label text="Cafetería — Formularios" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+        <VBox spacing="10" BorderPane.alignment="CENTER_LEFT" prefWidth="240" styleClass="vbox sidebar">
+            <padding>
+                <Insets top="16" right="16" bottom="16" left="16"/>
+            </padding>
+            <Label text="Cafetería — Formularios" styleClass="label sidebar-title"/>
             <Separator/>
-            <Button text="Tienda" onAction="#openTienda" maxWidth="Infinity"/>
-            <Button text="Producto" onAction="#openProducto" maxWidth="Infinity"/>
-            <Button text="Ingrediente" onAction="#openIngrediente" maxWidth="Infinity"/>
-            <Button text="Receta" onAction="#openReceta" maxWidth="Infinity"/>
-            <Button text="Proporción Ingrediente" onAction="#openProporcionIngrediente" maxWidth="Infinity"/>
-            <Button text="Paso de Receta" onAction="#openPaso" maxWidth="Infinity"/>
-            <Button text="Inventario de Productos" onAction="#openInventario" maxWidth="Infinity"/>
-            <Button text="Inventario de Ingredientes" onAction="#openInventarioIngredientes" maxWidth="Infinity"/>
-            <Button text="Venta" onAction="#openVenta" maxWidth="Infinity"/>
-            <Button text="Producto Vendido" onAction="#openProductoVendido" maxWidth="Infinity"/>
+            <Button text="Tienda" onAction="#openTienda" maxWidth="Infinity" styleClass="button sidebar-button"/>
+            <Button text="Producto" onAction="#openProducto" maxWidth="Infinity" styleClass="button sidebar-button"/>
+            <Button text="Ingrediente" onAction="#openIngrediente" maxWidth="Infinity" styleClass="button sidebar-button"/>
+            <Button text="Receta" onAction="#openReceta" maxWidth="Infinity" styleClass="button sidebar-button"/>
+            <Button text="Proporción Ingrediente" onAction="#openProporcionIngrediente" maxWidth="Infinity" styleClass="button sidebar-button"/>
+            <Button text="Paso de Receta" onAction="#openPaso" maxWidth="Infinity" styleClass="button sidebar-button"/>
+            <Button text="Inventario de Productos" onAction="#openInventario" maxWidth="Infinity" styleClass="button sidebar-button"/>
+            <Button text="Inventario de Ingredientes" onAction="#openInventarioIngredientes" maxWidth="Infinity" styleClass="button sidebar-button"/>
+            <Button text="Venta" onAction="#openVenta" maxWidth="Infinity" styleClass="button sidebar-button"/>
+            <Button text="Producto Vendido" onAction="#openProductoVendido" maxWidth="Infinity" styleClass="button sidebar-button"/>
             <Separator/>
-            <Button text="Salir" onAction="#exitApp" maxWidth="Infinity"/>
+            <Button text="Salir" onAction="#exitApp" maxWidth="Infinity" styleClass="button sidebar-button"/>
         </VBox>
     </left>
     <center>
-        <StackPane fx:id="contentHolder">
+        <StackPane fx:id="contentHolder" styleClass="stack-pane content-area">
             <Label text="Selecciona un formulario en la izquierda."/>
         </StackPane>
     </center>
