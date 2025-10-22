@@ -52,6 +52,11 @@ public class PasoFormController {
 
         if (detallesList != null) {
             detallesList.setItems(detalles);
+            detallesList.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
+                if (selected != null) {
+                    detalleArea.setText(selected);
+                }
+            });
         }
 
         // Filtrado/ordenado
@@ -67,6 +72,9 @@ public class PasoFormController {
                 detalles.setAll(selected.detalles == null ? List.of() : selected.detalles.stream()
                         .map(d -> d.pasoDetalle)
                         .collect(Collectors.toList()));
+                if (detallesList != null) {
+                    detallesList.getSelectionModel().clearSelection();
+                }
                 detalleArea.clear();
             }
         });
@@ -237,6 +245,9 @@ public class PasoFormController {
         detalleArea.clear();
         detalles.clear();
         pasosTable.getSelectionModel().clearSelection();
+        if (detallesList != null) {
+            detallesList.getSelectionModel().clearSelection();
+        }
         recetaCombo.requestFocus();
     }
 
@@ -292,6 +303,25 @@ public class PasoFormController {
         }
         detalles.add(detalle.trim());
         detalleArea.clear();
+        if (detallesList != null) {
+            detallesList.getSelectionModel().clearSelection();
+        }
+    }
+
+    @FXML private void onUpdateDetalle() {
+        if (detallesList == null) return;
+        int selectedIndex = detallesList.getSelectionModel().getSelectedIndex();
+        if (selectedIndex < 0) {
+            alert(Alert.AlertType.WARNING, "Seleccione un detalle", "Selecciona un detalle para actualizar.");
+            return;
+        }
+        String detalle = detalleArea != null ? detalleArea.getText() : null;
+        if (detalle == null || detalle.isBlank()) {
+            alert(Alert.AlertType.WARNING, "Campo requerido", "Captura el detalle actualizado antes de guardarlo.");
+            return;
+        }
+        detalles.set(selectedIndex, detalle.trim());
+        detallesList.getSelectionModel().select(selectedIndex);
     }
 
     @FXML private void onRemoveDetalle() {
@@ -302,6 +332,7 @@ public class PasoFormController {
             return;
         }
         detalles.remove(seleccionado);
+        detalleArea.clear();
     }
 
     private String buildRecetaLabel(Receta receta) {

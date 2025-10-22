@@ -30,6 +30,7 @@
                     <TextArea fx:id="detalleArea" prefRowCount="3" promptText="Descripción detallada del paso"/>
                     <HBox spacing="10" alignment="CENTER_RIGHT">
                         <Button text="Agregar detalle" onAction="#onAddDetalle"/>
+                        <Button text="Actualizar detalle" onAction="#onUpdateDetalle"/>
                         <Button text="Eliminar detalle" onAction="#onRemoveDetalle"/>
                     </HBox>
                     <ListView fx:id="detallesList" prefHeight="120"/>
